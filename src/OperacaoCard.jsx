@@ -124,7 +124,7 @@ export default function OperacaoCard({ op, onAtualizar }) {
         {/* Infos */}
         {origNome && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
-            <MapPin size={12} color="#94a3b8" />
+            <MapPin size={12} color="#3b82f6" />
             <span style={{ fontSize: 12, color: '#64748b' }}>Filial Remetente: {op.origem} | {origNome}</span>
           </div>
         )}
@@ -134,12 +134,18 @@ export default function OperacaoCard({ op, onAtualizar }) {
             <span style={{ fontSize: 12, color: '#64748b' }}>Motorista: {op.motorista}</span>
           </div>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: op.doca ? 3 : 12 }}>
-          <MapPin size={12} color="#94a3b8" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: (op.doca || op.vol || op.lacre) ? 3 : 12 }}>
+          <MapPin size={12} color="#ef4444" />
           <span style={{ fontSize: 12, color: '#64748b' }}>Filial Destinatário: {op.destino} | {destNome}</span>
         </div>
-        {op.doca && (
-          <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 12px', fontWeight: '600' }}>Doca: {op.doca}</p>
+        {(op.doca || op.vol || op.lacre) && (
+          <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 12px', fontWeight: '600' }}>
+            {[
+              op.doca && `Doca: ${op.doca}`,
+              op.vol && `Vol: ${op.vol}`,
+              op.lacre && `Lacre: ${op.lacre}`,
+            ].filter(Boolean).join('   ')}
+          </p>
         )}
 
         {/* Progresso */}
