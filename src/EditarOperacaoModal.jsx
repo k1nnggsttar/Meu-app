@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { X, ChevronDown, Plus, Camera, Search } from 'lucide-react'
 import { supabase } from './lib/supabase'
-import { FILIAIS } from './lib/filiais'
+import { FILIAIS, getNomeFilial } from './lib/filiais'
 import ConfirmModal from './ConfirmModal'
 
 const INP = {
@@ -93,6 +93,9 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   // Praças carregadas (local)
   const [pracas, setPracas] = useState([])
   const [pracaInput, setPracaInput] = useState('')
+  const [etapasExtras, setEtapasExtras] = useState([])
+  const [etapaInput, setEtapaInput] = useState('')
+  const [addingEtapa, setAddingEtapa] = useState(false)
 
   // Assinaturas / Foto / Lacre (local)
   const [assEncarregado, setAssEncarregado] = useState('')
@@ -107,6 +110,14 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
 
   const addPraca = () => {
     if (pracaInput && !pracas.includes(pracaInput)) { setPracas(p => [...p, pracaInput]); setPracaInput('') }
+  }
+
+  const addEtapa = () => {
+    if (etapaInput && etapaInput !== destino && !etapasExtras.includes(etapaInput)) {
+      setEtapasExtras(e => [...e, etapaInput])
+    }
+    setEtapaInput('')
+    setAddingEtapa(false)
   }
 
   const salvar = async () => {
@@ -264,10 +275,39 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
               <p style={{ ...SEC, margin: 0 }}>Etapas do carregamento</p>
               <span style={{ fontSize: 12, color: '#94a3b8' }}>Restam 15m</span>
             </div>
-            <p style={{ fontSize: 12, color: '#94a3b8', margin: '0 0 8px', textAlign: 'center' }}>Nenhuma etapa inserida</p>
-            <button type="button" style={{ width: '100%', padding: 10, border: '1.5px dashed #93c5fd', borderRadius: 8, background: 'transparent', color: '#2563eb', fontSize: 13, fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <Plus size={14} /> Nova etapa
-            </button>
+
+            {destino ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: '#eff6ff', borderRadius: 8 }}>
+                  <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#2563eb', color: 'white', fontSize: 11, fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</span>
+                  <span style={{ fontSize: 13, color: '#1e293b', fontWeight: '600' }}>{destino} | {getNomeFilial(destino)}</span>
+                </div>
+                {etapasExtras.map((c, i) => (
+                  <div key={c} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                    <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#94a3b8', color: 'white', fontSize: 11, fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 2}</span>
+                    <span style={{ fontSize: 13, color: '#1e293b', fontWeight: '600', flex: 1 }}>{c} | {getNomeFilial(c)}</span>
+                    <button type="button" onClick={() => setEtapasExtras(e => e.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#cbd5e1', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontSize: 12, color: '#94a3b8', margin: '0 0 8px', textAlign: 'center' }}>Selecione a filial destinatária para iniciar as etapas</p>
+            )}
+
+            {addingEtapa ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <FilialDropdown value={etapaInput} onChange={setEtapaInput} placeholder="Selecione a filial da etapa" />
+                </div>
+                <button type="button" onClick={addEtapa} style={{ width: 38, height: 38, background: '#2563eb', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Plus size={18} color="white" />
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => setAddingEtapa(true)} style={{ width: '100%', padding: 10, border: '1.5px dashed #93c5fd', borderRadius: 8, background: 'transparent', color: '#2563eb', fontSize: 13, fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Plus size={14} /> Nova etapa
+              </button>
+            )}
           </div>
 
           {/* Composição da carga */}
