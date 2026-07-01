@@ -35,8 +35,7 @@ export default function Login() {
         maxWidth: 360,
         boxShadow: '0 4px 24px rgba(0,0,0,0.07)'
       }}>
-        <img src={logo} alt="Vitlog" style={{ height: 42, display: 'block', margin: '0 auto 12px', objectFit: 'contain' }} />
-        <img src="/banana.svg" alt="Banana" style={{ height: 60, display: 'block', margin: '0 auto 28px', objectFit: 'contain' }} />
+        <img src={logo} alt="Vitlog" style={{ height: 42, display: 'block', margin: '0 auto 28px', objectFit: 'contain' }} />
 
         <h2 style={{ fontSize: 20, fontWeight: '700', color: '#1e293b', textAlign: 'center', marginBottom: 6 }}>
           Bem-vindo
