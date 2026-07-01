@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Truck, MapPin, Pause, Play, CheckCircle, Edit2, Clock } from 'lucide-react'
+import { Truck, MapPin, Pause, Play, CheckCircle, Edit2, Clock, Timer } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { getNomeFilial } from './lib/filiais'
 import EditarOperacaoModal from './EditarOperacaoModal'
@@ -100,7 +100,7 @@ export default function OperacaoCard({ op, onAtualizar }) {
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
               <span style={badge('#dbeafe', '#2563eb')}>EM CARREGAMENTO</span>
               {op.tipoFrota && (
-                <span style={badge(op.tipoFrota === 'FROTA' ? '#dcfce7' : '#fef3c7', op.tipoFrota === 'FROTA' ? '#16a34a' : '#d97706')}>
+                <span style={badge('#dbeafe', '#2563eb')}>
                   {op.tipoFrota}
                 </span>
               )}
@@ -108,10 +108,11 @@ export default function OperacaoCard({ op, onAtualizar }) {
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginBottom: 5 }}>
-              <span style={{ fontSize: 11, color: '#64748b' }}>{fmtData(op.created_at)}</span>
               <Clock size={12} color="#94a3b8" />
+              <span style={{ fontSize: 11, color: '#64748b' }}>{fmtData(op.created_at)}</span>
             </div>
-            <div style={{ fontSize: 12, fontWeight: '700', color: isPaused ? '#94a3b8' : '#2563eb', marginBottom: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', fontSize: 12, fontWeight: '700', color: isPaused ? '#94a3b8' : '#2563eb', marginBottom: 2 }}>
+              <Timer size={12} color={isPaused ? '#94a3b8' : '#2563eb'} />
               Prod {fmtTimer(prodSec)}
             </div>
             <div style={{ fontSize: 12, fontWeight: '600', color: '#64748b' }}>
