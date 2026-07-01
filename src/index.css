@@ -1,0 +1,68 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f8fafc;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+input, button, textarea {
+  font-family: inherit;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+.card-hover {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  cursor: pointer;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+}
+.card-hover:active {
+  transform: translateY(0px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07) !important;
+}
+
+.row-hover {
+  transition: background 0.15s ease;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.row-hover:hover {
+  background: #f1f5f9;
+}
+
+.btn-hover {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.btn-hover:hover {
+  opacity: 0.85;
+  transform: scale(1.02);
+}
+.btn-hover:active {
+  transform: scale(0.98);
+}
+
+.icon-hover {
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+.icon-hover:hover {
+  transform: translateX(4px) translateY(-2px);
+}
+.icon-hover:active {
+  transform: translateX(2px) translateY(0px);
+}
