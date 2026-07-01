@@ -158,17 +158,17 @@ export default function OperacaoCard({ op, onAtualizar }) {
       </div>
 
       {/* Botões */}
-      <div style={{ display: 'flex', borderTop: '1px solid #f1f5f9' }}>
+      <div style={{ display: 'flex', gap: 10, borderTop: '1px solid #f1f5f9', padding: '12px 16px 16px' }}>
         <button
           onClick={() => setConfirmAcao(isPaused ? 'retomar' : 'pausar')}
-          style={{ flex: 1, padding: '12px 0', border: 'none', cursor: 'pointer', background: isPaused ? '#16a34a' : '#f59e0b', color: 'white', fontSize: 13, fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'background 0.15s' }}
+          style={{ flex: 1, padding: '11px 0', border: 'none', borderRadius: 10, cursor: 'pointer', background: isPaused ? '#16a34a' : '#f59e0b', color: 'white', fontSize: 13, fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'background 0.15s' }}
         >
           {isPaused ? <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Play size={14} /> Retomar</span> : <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Pause size={14} /> Pausar</span>}
         </button>
         <button
           onClick={() => setConfirmAcao('finalizar')}
           disabled={finalizando}
-          style={{ flex: 1, padding: '12px 0', border: 'none', borderLeft: '1px solid #f1f5f9', cursor: finalizando ? 'default' : 'pointer', background: 'white', color: finalizando ? '#94a3b8' : '#16a34a', fontSize: 13, fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+          style={{ flex: 1, padding: '11px 0', border: '1px solid #e2e8f0', borderRadius: 10, cursor: finalizando ? 'default' : 'pointer', background: 'white', color: finalizando ? '#94a3b8' : '#16a34a', fontSize: 13, fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
         >
           <CheckCircle size={14} /> {finalizando ? 'Finalizando...' : 'Finalizar'}
         </button>
