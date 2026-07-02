@@ -173,7 +173,7 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
               display: 'flex', overflow: 'hidden', borderRadius: 2
             }}>
               {totalMetros === 0 ? (
-                <div style={{ width: '100%', height: '100%', background: 'repeating-linear-gradient(-45deg, rgba(241,245,249,0.85), rgba(241,245,249,0.85) 6px, rgba(226,232,240,0.85) 6px, rgba(226,232,240,0.85) 12px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '100%', height: '100%', background: 'rgba(226,232,240,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ fontSize: 10, color: '#64748b', fontWeight: '700', background: 'rgba(255,255,255,0.8)', padding: '2px 8px', borderRadius: 4 }}>Sem carga</span>
                 </div>
               ) : (
@@ -186,8 +186,8 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
                     </div>
                   ))}
                   {restamM > 0 && (
-                    <div style={{ flex: 1, background: 'repeating-linear-gradient(-45deg, rgba(241,245,249,0.85), rgba(241,245,249,0.85) 6px, rgba(226,232,240,0.85) 6px, rgba(226,232,240,0.85) 12px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: 10, color: '#64748b', fontWeight: '600' }}>{fmtMetros(restamM)} vazio</span>
+                    <div style={{ flex: 1, background: 'rgba(226,232,240,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 10, color: '#64748b', fontWeight: '600', textAlign: 'center' }}>{fmtMetros(restamM)} vazio</span>
                     </div>
                   )}
                 </>
