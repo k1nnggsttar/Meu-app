@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { Plus, Trash2, Edit2, Check, Lock } from 'lucide-react'
+import truckImg from './assets/truck.jpg'
 
 const TRUCK_TOTAL_M = 15
 const CORES = ['#16a34a', '#2563eb', '#d97706', '#db2777', '#7c3aed', '#0891b2']
 const OPCOES_METROS = Array.from({ length: TRUCK_TOTAL_M * 2 }, (_, i) => (i + 1) / 2)
+
+// Posição do baú dentro da imagem do caminhão (% da imagem inteira)
+const BAU = { left: 22, top: 14, width: 74, height: 48 }
+const TRUCK_ASPECT = 625 / 1600
 
 const THS = { padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: '700', color: '#64748b', borderBottom: '1px solid #e2e8f0' }
 
@@ -160,26 +165,35 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
         </div>
         <div style={{ padding: '12px 16px', background: '#f8fafc' }}>
           <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 10px', textAlign: 'center' }}>Composição da carga — {TRUCK_TOTAL_M} metros</p>
-          {totalMetros === 0 ? (
-            <div style={{ height: 70, borderRadius: 6, border: '1px solid #cbd5e1', background: 'repeating-linear-gradient(-45deg, #f1f5f9, #f1f5f9 6px, #e2e8f0 6px, #e2e8f0 12px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: '600' }}>Sem carga</span>
-            </div>
-          ) : (
-            <div style={{ height: 70, borderRadius: 6, border: '1px solid #cbd5e1', overflow: 'hidden', display: 'flex' }}>
-              {etapas.filter(et => et.metros > 0).map((et, i) => (
-                <div key={et.id} style={{ width: `${(Number(et.metros) / TRUCK_TOTAL_M) * 100}%`, background: CORES[i % CORES.length], display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid white', minWidth: 2 }}>
-                  <span style={{ fontSize: 9, color: 'white', fontWeight: '700', textAlign: 'center', lineHeight: 1.3, padding: 2 }}>
-                    {fmtMetros(et.metros)}{et.pracas.length > 0 && <><br />{et.pracas.join('/')}</>}
-                  </span>
+          <div style={{ position: 'relative', width: '100%', paddingTop: `${TRUCK_ASPECT * 100}%` }}>
+            <img src={truckImg} alt="Caminhão" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />
+            <div style={{
+              position: 'absolute',
+              left: `${BAU.left}%`, top: `${BAU.top}%`, width: `${BAU.width}%`, height: `${BAU.height}%`,
+              display: 'flex', overflow: 'hidden', borderRadius: 2
+            }}>
+              {totalMetros === 0 ? (
+                <div style={{ width: '100%', height: '100%', background: 'repeating-linear-gradient(-45deg, rgba(241,245,249,0.85), rgba(241,245,249,0.85) 6px, rgba(226,232,240,0.85) 6px, rgba(226,232,240,0.85) 12px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 10, color: '#64748b', fontWeight: '700', background: 'rgba(255,255,255,0.8)', padding: '2px 8px', borderRadius: 4 }}>Sem carga</span>
                 </div>
-              ))}
-              {restamM > 0 && (
-                <div style={{ flex: 1, background: 'repeating-linear-gradient(-45deg, #f1f5f9, #f1f5f9 6px, #e2e8f0 6px, #e2e8f0 12px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: '600' }}>{fmtMetros(restamM)} vazio</span>
-                </div>
+              ) : (
+                <>
+                  {etapas.filter(et => et.metros > 0).map((et, i) => (
+                    <div key={et.id} style={{ width: `${(Number(et.metros) / TRUCK_TOTAL_M) * 100}%`, background: CORES[i % CORES.length], display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid white', minWidth: 2 }}>
+                      <span style={{ fontSize: 9, color: 'white', fontWeight: '700', textAlign: 'center', lineHeight: 1.3, padding: 2 }}>
+                        {fmtMetros(et.metros)}{et.pracas.length > 0 && <><br />{et.pracas.join('/')}</>}
+                      </span>
+                    </div>
+                  ))}
+                  {restamM > 0 && (
+                    <div style={{ flex: 1, background: 'repeating-linear-gradient(-45deg, rgba(241,245,249,0.85), rgba(241,245,249,0.85) 6px, rgba(226,232,240,0.85) 6px, rgba(226,232,240,0.85) 12px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 10, color: '#64748b', fontWeight: '600' }}>{fmtMetros(restamM)} vazio</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
