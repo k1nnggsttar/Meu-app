@@ -7,7 +7,7 @@ const CORES = ['#16a34a', '#2563eb', '#d97706', '#db2777', '#7c3aed', '#0891b2']
 const OPCOES_METROS = Array.from({ length: TRUCK_TOTAL_M * 2 }, (_, i) => (i + 1) / 2)
 
 // Posição do baú dentro da imagem do caminhão (% da imagem inteira)
-const BAU = { left: 22, top: 14, width: 74, height: 48 }
+const BAU = { left: 22.63, top: 14.56, width: 74.63, height: 45.92 }
 const TRUCK_ASPECT = 625 / 1600
 
 const THS = { padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: '700', color: '#64748b', borderBottom: '1px solid #e2e8f0' }
@@ -39,9 +39,13 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
   }
 
   const totalMetros = etapas.reduce((s, et) => s + (Number(et.metros) || 0), 0)
-  const totalVolumes = etapas.reduce((s, et) => s + (Number(et.volumes) || 0), 0)
-  const pct = TRUCK_TOTAL_M > 0 ? Math.min(100, Math.round((totalMetros / TRUCK_TOTAL_M) * 100)) : 0
   const restamM = Math.max(0, TRUCK_TOTAL_M - totalMetros)
+
+  const etapasFechadas = etapas.filter(et => et.fechada)
+  const metrosComposicao = etapasFechadas.reduce((s, et) => s + (Number(et.metros) || 0), 0)
+  const volumesComposicao = etapasFechadas.reduce((s, et) => s + (Number(et.volumes) || 0), 0)
+  const pctComposicao = TRUCK_TOTAL_M > 0 ? Math.min(100, Math.round((metrosComposicao / TRUCK_TOTAL_M) * 100)) : 0
+  const restamComposicao = Math.max(0, TRUCK_TOTAL_M - metrosComposicao)
 
   return (
     <div style={{ marginBottom: 20 }}>
@@ -158,9 +162,9 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
         <div style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 6 }}>
           <span style={{ fontSize: 11, fontWeight: '700', color: '#1e293b', letterSpacing: 0.5 }}>COMPOSIÇÃO DA CARGA</span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: '#64748b' }}>{fmtMetros(totalMetros)} / {TRUCK_TOTAL_M} m</span>
-            <span style={{ background: '#eff6ff', color: '#2563eb', fontSize: 10, fontWeight: '700', padding: '2px 7px', borderRadius: 999 }}>{pct}%</span>
-            <span style={{ fontSize: 12, color: '#64748b' }}>· {totalVolumes} vol</span>
+            <span style={{ fontSize: 12, color: '#64748b' }}>{fmtMetros(metrosComposicao)} / {TRUCK_TOTAL_M} m</span>
+            <span style={{ background: '#eff6ff', color: '#2563eb', fontSize: 10, fontWeight: '700', padding: '2px 7px', borderRadius: 999 }}>{pctComposicao}%</span>
+            <span style={{ fontSize: 12, color: '#64748b' }}>· {volumesComposicao} vol</span>
           </div>
         </div>
         <div style={{ padding: '12px 16px', background: '#f8fafc' }}>
@@ -172,22 +176,22 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
               left: `${BAU.left}%`, top: `${BAU.top}%`, width: `${BAU.width}%`, height: `${BAU.height}%`,
               display: 'flex', overflow: 'hidden', borderRadius: 2
             }}>
-              {totalMetros === 0 ? (
+              {metrosComposicao === 0 ? (
                 <div style={{ width: '100%', height: '100%', background: 'rgba(226,232,240,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ fontSize: 10, color: '#64748b', fontWeight: '700', background: 'rgba(255,255,255,0.8)', padding: '2px 8px', borderRadius: 4 }}>Sem carga</span>
                 </div>
               ) : (
                 <>
-                  {etapas.filter(et => et.metros > 0).map((et, i) => (
+                  {etapasFechadas.filter(et => et.metros > 0).map((et, i) => (
                     <div key={et.id} style={{ width: `${(Number(et.metros) / TRUCK_TOTAL_M) * 100}%`, background: CORES[i % CORES.length], display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid white', minWidth: 2 }}>
                       <span style={{ fontSize: 9, color: 'white', fontWeight: '700', textAlign: 'center', lineHeight: 1.3, padding: 2 }}>
                         {fmtMetros(et.metros)}{et.pracas.length > 0 && <><br />{et.pracas.join('/')}</>}
                       </span>
                     </div>
                   ))}
-                  {restamM > 0 && (
+                  {restamComposicao > 0 && (
                     <div style={{ flex: 1, background: 'rgba(226,232,240,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: 10, color: '#64748b', fontWeight: '600', textAlign: 'center' }}>{fmtMetros(restamM)} vazio</span>
+                      <span style={{ fontSize: 10, color: '#64748b', fontWeight: '600', textAlign: 'center' }}>{fmtMetros(restamComposicao)} vazio</span>
                     </div>
                   )}
                 </>
