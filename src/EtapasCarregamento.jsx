@@ -47,7 +47,7 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
 
   const addOcorrencia = (etapaId) => {
     setEtapas(e => e.map(et => et.id === etapaId
-      ? { ...et, ocorrencias: [...(et.ocorrencias || []), { id: novoId(), nf: '', codigo: '', descricao: '', anexo: null, ssw: false }] }
+      ? { ...et, ocorrencias: [...(et.ocorrencias || []), { id: novoId(), nf: '', codigo: '', descricao: '', anexo: null, ssw: false, criadaEm: new Date().toISOString() }] }
       : et))
   }
   const updateOcorrencia = (etapaId, ocorrId, patch) => {

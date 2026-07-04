@@ -14,6 +14,7 @@ export function serializarEtapas(etapas) {
       descricao: o.descricao || '',
       ssw: !!o.ssw,
       anexoNome: o.anexo?.name || o.anexoNome || null,
+      criadaEm: o.criadaEm || null,
     })),
   }))
 }

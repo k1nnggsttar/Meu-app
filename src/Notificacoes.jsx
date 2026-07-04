@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bell, CheckCircle2, Truck } from 'lucide-react'
+import { Bell, CheckCircle2, Truck, AlertTriangle } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { getOcorrencia } from './lib/ocorrencias'
 
 function tempoRelativo(iso) {
   const diff = Date.now() - new Date(iso).getTime()
@@ -22,6 +23,19 @@ function derivarNotificacoes(operacoes) {
     lista.push({ id: `${op.id}:start`, tipo: 'iniciado', sub, ts: op.created_at })
     if (op.status === 'concluido') {
       lista.push({ id: `${op.id}:end`, tipo: 'finalizado', sub, ts: op.finalizado_at || op.updated_at || op.created_at })
+    }
+    // Ocorrências registradas nas etapas
+    for (const et of (op.detalhes?.etapas || [])) {
+      for (const o of (et.ocorrencias || [])) {
+        if (!o.codigo) continue
+        const desc = o.descricao || getOcorrencia(o.codigo)?.descricao || ''
+        lista.push({
+          id: `${op.id}:ocorr:${o.id}`,
+          tipo: 'ocorrencia',
+          sub: [op.placaCarreta, `${o.codigo} ${desc}`.trim()].filter(Boolean).join(' • '),
+          ts: o.criadaEm || op.created_at,
+        })
+      }
     }
   }
   return lista.sort((a, b) => new Date(b.ts) - new Date(a.ts))
@@ -93,16 +107,19 @@ export default function Notificacoes() {
               <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '28px 16px', margin: 0 }}>Sem notificações</p>
             ) : (
               visiveis.map(n => {
-                const fin = n.tipo === 'finalizado'
+                const cfg = {
+                  finalizado: { titulo: 'Carregamento finalizado', Icon: CheckCircle2, cor: '#16a34a', bg: '#f0fdf4' },
+                  iniciado: { titulo: 'Carregamento iniciado', Icon: Truck, cor: '#2563eb', bg: '#eff6ff' },
+                  ocorrencia: { titulo: 'Nova ocorrência', Icon: AlertTriangle, cor: '#d97706', bg: '#fffbeb' },
+                }[n.tipo] || { titulo: n.tipo, Icon: Truck, cor: '#2563eb', bg: '#eff6ff' }
+                const { Icon } = cfg
                 return (
                   <div key={n.id} style={{ display: 'flex', gap: 10, padding: '12px 16px', borderBottom: '1px solid #f8fafc' }}>
-                    <div style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 999, background: fin ? '#f0fdf4' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {fin ? <CheckCircle2 size={17} color="#16a34a" /> : <Truck size={16} color="#2563eb" />}
+                    <div style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 999, background: cfg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon size={16} color={cfg.cor} />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <p style={{ margin: 0, fontSize: 13, fontWeight: '700', color: '#1e293b' }}>
-                        {fin ? 'Carregamento finalizado' : 'Carregamento iniciado'}
-                      </p>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: '700', color: '#1e293b' }}>{cfg.titulo}</p>
                       <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.sub}</p>
                       <p style={{ margin: '3px 0 0', fontSize: 11, color: '#94a3b8' }}>{tempoRelativo(n.ts)}</p>
                     </div>
