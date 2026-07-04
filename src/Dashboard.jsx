@@ -70,6 +70,18 @@ export default function Dashboard({ setPage }) {
   const prodList = ativos.map(op => ({ op, sec: calcProdSec(op, now) })).sort((a, b) => b.sec - a.sec)
   const acima4h = prodList.filter(x => x.sec >= T4H)
 
+  const hoje = new Date()
+  const isHoje = (iso) => {
+    if (!iso) return false
+    const d = new Date(iso)
+    return d.getDate() === hoje.getDate() && d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear()
+  }
+  const finalizadosHoje = concluidos.filter(op => isHoje(op.finalizado_at || op.created_at))
+  const listaProducao = [
+    ...prodList.map(x => ({ ...x, concluido: false })),
+    ...finalizadosHoje.map(op => ({ op, sec: 0, concluido: true })),
+  ]
+
   return (
     <div style={{ padding: '20px 16px' }}>
       <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Página inicial</h2>
@@ -177,13 +189,13 @@ export default function Dashboard({ setPage }) {
           </div>
         )}
 
-        {prodList.length === 0 ? (
+        {listaProducao.length === 0 ? (
           <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '12px 0 4px' }}>
             Nenhum carregamento em andamento.
           </p>
         ) : (
-          prodList.map(({ op, sec }) => {
-            const alerta = sec >= T4H
+          listaProducao.map(({ op, sec, concluido }) => {
+            const alerta = !concluido && sec >= T4H
             const st = statusInfo(op)
             const vol = totalVolumes(op)
             const valor = op.mercadoria ?? op.frete
@@ -199,10 +211,16 @@ export default function Dashboard({ setPage }) {
                   {op.destino ? `${op.destino} · ${getNomeFilial(op.destino)}` : '—'}
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 10, marginTop: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: '700', fontFamily: 'monospace', color: alerta ? '#dc2626' : '#16a34a' }}>
-                    {alerta && <AlertTriangle size={13} color="#dc2626" />}
-                    {fmtTimer(sec)}
-                  </div>
+                  {concluido ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: '700', color: '#2563eb' }}>
+                      <CheckCircle size={13} color="#2563eb" /> Finalizado
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: '700', fontFamily: 'monospace', color: alerta ? '#dc2626' : '#16a34a' }}>
+                      {alerta && <AlertTriangle size={13} color="#dc2626" />}
+                      {fmtTimer(sec)}
+                    </div>
+                  )}
                   <div style={{ textAlign: 'right' }}>
                     {(valor != null) && <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: 0 }}>{fmtBRL(valor)}</p>}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', margin: '3px 0 0' }}>
