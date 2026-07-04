@@ -1,5 +1,6 @@
-import { Bell, Camera } from 'lucide-react'
 import logo from './assets/logo.png'
+import Notificacoes from './Notificacoes'
+import Fotos from './Fotos'
 
 export default function Header() {
   return (
@@ -21,28 +22,9 @@ export default function Header() {
       <img src={logo} alt="Vitlog" style={{ height: 54, objectFit: 'contain', marginLeft: -8 }} />
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-        <div className="icon-hover" style={{ position: 'relative' }}>
-          <Bell size={22} color="#64748b" />
-          <span style={{
-            position: 'absolute', top: -5, right: -5,
-            background: '#ef4444', color: 'white',
-            borderRadius: 999, fontSize: 9, width: 15, height: 15,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: '700'
-          }}>1</span>
-        </div>
-        <div className="icon-hover" style={{ position: 'relative' }}>
-          <Camera size={22} color="#64748b" />
-          <span style={{
-            position: 'absolute', top: -5, right: -5,
-            background: '#ef4444', color: 'white',
-            borderRadius: 999, fontSize: 9, width: 15, height: 15,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: '700'
-          }}>1</span>
-        </div>
+        <Notificacoes />
+        <Fotos />
       </div>
     </div>
   )
 }
-

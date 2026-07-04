@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react"
 import { X, Paperclip, Search, Plus, ChevronDown, Camera } from 'lucide-react'
 import { supabase } from "./lib/supabase"
+import { uploadFotosOperacao } from "./lib/fotos"
 import { FILIAIS } from "./lib/filiais"
 import EtapasCarregamento from "./EtapasCarregamento"
 
@@ -150,7 +151,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
     if (!formOk || salvando) return
     setErroSalvar('')
     setSalvando(true)
-    const { error } = await supabase.from('operacoes').insert({
+    const { data: nova, error } = await supabase.from('operacoes').insert({
       tipoFrota: tipoVeiculo === 'frota' ? 'FROTA' : 'TERCEIRO',
       destino: filialDest,
       origem: filialOrig,
@@ -163,15 +164,28 @@ export default function CadastrarModal({ onClose, onSalvo }) {
       status: 'ativo',
       paused: false,
       paused_duration: 0,
-    })
-    setSalvando(false)
+    }).select().single()
     if (error) {
+      setSalvando(false)
       console.error('Erro ao cadastrar:', error.message)
       setErroSalvar(error.message || error.details || 'Erro ao salvar. Tente novamente.')
-    } else {
-      onSalvo?.()
-      setEtapa(3)
+      return
     }
+
+    // Envia as fotos do checklist + traseira ao Storage (não bloqueia o cadastro se falhar).
+    try {
+      const arquivos = [...Object.values(fotos), fotoTraseira].filter(Boolean)
+      if (nova?.id && arquivos.length) {
+        const urls = await uploadFotosOperacao(nova.id, arquivos)
+        if (urls.length) await supabase.from('operacoes').update({ fotos: urls }).eq('id', nova.id)
+      }
+    } catch (e) {
+      console.warn('Fotos não foram salvas:', e?.message)
+    }
+
+    setSalvando(false)
+    onSalvo?.()
+    setEtapa(3)
   }
 
   return (

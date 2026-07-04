@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import { getNomeFilial } from './lib/filiais'
 import EditarOperacaoModal from './EditarOperacaoModal'
 import ConfirmModal from './ConfirmModal'
+import FinalizarModal from './FinalizarModal'
 
 function fmtTimer(sec) {
   if (sec < 0) sec = 0
@@ -31,7 +32,8 @@ export default function OperacaoCard({ op, onAtualizar }) {
   const [pausedDur, setPausedDur] = useState(op.paused_duration || 0)
   const [finalizando, setFinalizando] = useState(false)
   const [editando, setEditando] = useState(false)
-  const [confirmAcao, setConfirmAcao] = useState(null) // null | 'pausar' | 'retomar' | 'finalizar'
+  const [confirmAcao, setConfirmAcao] = useState(null) // null | 'pausar' | 'retomar'
+  const [finalizModal, setFinalizModal] = useState(false)
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000)
@@ -75,11 +77,20 @@ export default function OperacaoCard({ op, onAtualizar }) {
     else onAtualizar()
   }
 
-  const finalizar = async () => {
+  const finalizar = async ({ frete, mercadoria }) => {
     setFinalizando(true)
-    const { error } = await supabase.from('operacoes').update({ status: 'concluido', progresso: 100, paused: false, paused_at: null }).eq('id', op.id)
-    if (error) setFinalizando(false)
-    else onAtualizar()
+    const base = { status: 'concluido', progresso: 100, paused: false, paused_at: null }
+    let { error } = await supabase.from('operacoes').update({ ...base, frete, mercadoria }).eq('id', op.id)
+    if (error) {
+      // As colunas frete/mercadoria podem ainda não existir na tabela — finaliza mesmo assim.
+      ;({ error } = await supabase.from('operacoes').update(base).eq('id', op.id))
+    }
+    if (error) {
+      setFinalizando(false)
+    } else {
+      setFinalizModal(false)
+      onAtualizar()
+    }
   }
 
   const destNome = getNomeFilial(op.destino)
@@ -166,7 +177,7 @@ export default function OperacaoCard({ op, onAtualizar }) {
           {isPaused ? <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Play size={14} /> Retomar</span> : <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Pause size={14} /> Pausar</span>}
         </button>
         <button
-          onClick={() => setConfirmAcao('finalizar')}
+          onClick={() => setFinalizModal(true)}
           disabled={finalizando}
           style={{ flex: 1, padding: '11px 0', border: '1px solid #e2e8f0', borderRadius: 10, cursor: finalizando ? 'default' : 'pointer', background: 'white', color: finalizando ? '#94a3b8' : '#16a34a', fontSize: 13, fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
         >
@@ -184,34 +195,30 @@ export default function OperacaoCard({ op, onAtualizar }) {
 
       {confirmAcao && (
         <ConfirmModal
-          titulo={
-            confirmAcao === 'pausar' ? 'Pausar carregamento?' :
-            confirmAcao === 'retomar' ? 'Retomar carregamento?' :
-            'Finalizar carregamento?'
-          }
+          titulo={confirmAcao === 'pausar' ? 'Pausar carregamento?' : 'Retomar carregamento?'}
           mensagem={
-            confirmAcao === 'pausar' ? 'O cronômetro de produção será pausado para este caminhão.' :
-            confirmAcao === 'retomar' ? 'O cronômetro de produção voltará a contar para este caminhão.' :
-            'Essa ação marca o carregamento como concluído e não pode ser desfeita.'
+            confirmAcao === 'pausar'
+              ? 'O cronômetro de produção será pausado para este caminhão.'
+              : 'O cronômetro de produção voltará a contar para este caminhão.'
           }
-          confirmText={
-            confirmAcao === 'pausar' ? 'Pausar' :
-            confirmAcao === 'retomar' ? 'Retomar' :
-            'Finalizar'
-          }
-          confirmColor={
-            confirmAcao === 'pausar' ? '#f59e0b' :
-            confirmAcao === 'retomar' ? '#16a34a' :
-            '#16a34a'
-          }
+          confirmText={confirmAcao === 'pausar' ? 'Pausar' : 'Retomar'}
+          confirmColor={confirmAcao === 'pausar' ? '#f59e0b' : '#16a34a'}
           onCancel={() => setConfirmAcao(null)}
           onConfirm={() => {
             const acao = confirmAcao
             setConfirmAcao(null)
             if (acao === 'pausar') pausar()
             else if (acao === 'retomar') retomar()
-            else finalizar()
           }}
+        />
+      )}
+
+      {finalizModal && (
+        <FinalizarModal
+          placa={op.placaCarreta}
+          salvando={finalizando}
+          onCancel={() => setFinalizModal(false)}
+          onConfirm={finalizar}
         />
       )}
     </div>
