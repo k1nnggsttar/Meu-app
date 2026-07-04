@@ -38,11 +38,15 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
   }
 
   const togglePraca = (id, codigo) => {
-    setEtapas(e => e.map(et => {
-      if (et.id !== id) return et
-      const tem = et.pracas.includes(codigo)
-      return { ...et, pracas: tem ? et.pracas.filter(c => c !== codigo) : [...et.pracas, codigo] }
-    }))
+    setEtapas(e => {
+      const usadaOutra = e.some(et => et.id !== id && (et.pracas || []).includes(codigo))
+      return e.map(et => {
+        if (et.id !== id) return et
+        const tem = et.pracas.includes(codigo)
+        if (!tem && usadaOutra) return et // praça já está em outra etapa — não adiciona
+        return { ...et, pracas: tem ? et.pracas.filter(c => c !== codigo) : [...et.pracas, codigo] }
+      })
+    })
   }
 
   const addOcorrencia = (etapaId) => {
@@ -161,21 +165,32 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
                 <p style={{ fontSize: 11, fontWeight: '600', color: '#64748b', margin: '0 0 6px' }}>Praças desta etapa</p>
                 {pracasDisponiveis.length === 0 ? (
                   <p style={{ fontSize: 12, color: '#94a3b8', margin: '0 0 12px' }}>Adicione praças em "Praças carregadas" acima para atribuí-las a uma etapa.</p>
-                ) : (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                    {pracasDisponiveis.map(c => {
-                      const sel = et.pracas.includes(c)
-                      return (
-                        <button key={c} type="button" onClick={() => togglePraca(et.id, c)} style={{
-                          background: sel ? '#1d4ed8' : '#f1f5f9', color: sel ? 'white' : '#94a3b8',
-                          fontSize: 11, fontWeight: '700', padding: '5px 12px', borderRadius: 999, border: 'none', cursor: 'pointer'
-                        }}>
-                          {c}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
+                ) : (() => {
+                  const usadasOutras = new Set(etapas.filter(x => x.id !== et.id).flatMap(x => x.pracas || []))
+                  return (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                      {pracasDisponiveis.map(c => {
+                        const sel = et.pracas.includes(c)
+                        const bloqueada = !sel && usadasOutras.has(c)
+                        return (
+                          <button key={c} type="button" disabled={bloqueada}
+                            onClick={() => togglePraca(et.id, c)}
+                            title={bloqueada ? 'Já usada em outra etapa' : ''}
+                            style={{
+                              background: sel ? '#1d4ed8' : bloqueada ? '#f8fafc' : '#f1f5f9',
+                              color: sel ? 'white' : bloqueada ? '#cbd5e1' : '#94a3b8',
+                              fontSize: 11, fontWeight: '700', padding: '5px 12px', borderRadius: 999,
+                              border: bloqueada ? '1px dashed #e2e8f0' : 'none',
+                              cursor: bloqueada ? 'not-allowed' : 'pointer',
+                              textDecoration: bloqueada ? 'line-through' : 'none'
+                            }}>
+                            {c}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                   {(() => {
                     const usadoOutras = totalMetros - (Number(et.metros) || 0)
