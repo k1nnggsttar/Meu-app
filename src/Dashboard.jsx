@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
-import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, Mail } from 'lucide-react'
+import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, Mail, AlertTriangle } from 'lucide-react'
+import { getNomeFilial } from "./lib/filiais"
 
 function fmtTimer(sec) {
   if (sec < 0) sec = 0
@@ -8,6 +9,20 @@ function fmtTimer(sec) {
   const m = Math.floor((sec % 3600) / 60)
   const s = sec % 60
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+}
+
+function fmtBRL(v) {
+  return `R$ ${Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function totalVolumes(op) {
+  return (op.detalhes?.etapas || []).reduce((s, et) => s + (Number(et.volumes) || 0), 0)
+}
+
+function statusInfo(op) {
+  if (op.status === 'concluido') return { label: 'Em trânsito', dot: '#2563eb', color: '#2563eb', bg: '#eff6ff' }
+  if (op.paused) return { label: 'Parado', dot: '#f59e0b', color: '#d97706', bg: '#fffbeb' }
+  return { label: 'Em produção', dot: '#16a34a', color: '#16a34a', bg: '#f0fdf4' }
 }
 
 function calcProdSec(op, now) {
@@ -50,6 +65,10 @@ export default function Dashboard({ setPage }) {
     acc[p].push(op)
     return acc
   }, {})
+
+  const T4H = 4 * 3600
+  const prodList = ativos.map(op => ({ op, sec: calcProdSec(op, now) })).sort((a, b) => b.sec - a.sec)
+  const acima4h = prodList.filter(x => x.sec >= T4H)
 
   return (
     <div style={{ padding: '20px 16px' }}>
@@ -123,6 +142,76 @@ export default function Dashboard({ setPage }) {
             {concluidos.length === 0 ? 'Nenhum até agora' : ''}
           </p>
         </div>
+      </div>
+
+      {/* Produção em andamento */}
+      <div className="card-hover" style={{
+        background: 'white', borderRadius: 16,
+        padding: 16, marginBottom: 12,
+        boxShadow: '0 2px 10px rgba(0,0,0,0.07)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: 0 }}>Produção em andamento</p>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f0fdf4', color: '#16a34a', fontSize: 9, fontWeight: '800', letterSpacing: 0.5, padding: '2px 7px', borderRadius: 999 }}>
+                <span className="live-dot" /> AO VIVO
+              </span>
+            </div>
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>Alerta acima de 4h de produção</p>
+          </div>
+          <button
+            onClick={() => setPage('carregamento')}
+            style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: 12, cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap', paddingTop: 2 }}
+          >
+            Ver todos →
+          </button>
+        </div>
+
+        {acima4h.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px', marginBottom: 6 }}>
+            <AlertTriangle size={15} color="#dc2626" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 12, fontWeight: '700', color: '#dc2626' }}>
+              {acima4h.length} caminhão{acima4h.length > 1 ? '(ões)' : ''} acima de 4h de produção
+            </span>
+          </div>
+        )}
+
+        {prodList.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '12px 0 4px' }}>
+            Nenhum carregamento em andamento.
+          </p>
+        ) : (
+          prodList.map(({ op, sec }) => {
+            const alerta = sec >= T4H
+            const st = statusInfo(op)
+            const vol = totalVolumes(op)
+            const valor = op.mercadoria ?? op.frete
+            return (
+              <div key={op.id} className="row-hover" style={{ padding: '10px 10px', borderTop: '1px solid #f1f5f9', marginTop: 6, background: alerta ? '#fef2f2' : 'transparent', borderRadius: alerta ? 8 : 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                  <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: 0 }}>{op.placaCarreta || '—'}</p>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: st.bg, color: st.color, fontSize: 10, fontWeight: '700', padding: '2px 8px', borderRadius: 999, flexShrink: 0 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: 999, background: st.dot }} /> {st.label}
+                  </span>
+                </div>
+                <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {op.destino ? `${op.destino} · ${getNomeFilial(op.destino)}` : '—'}
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 10, marginTop: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: '700', fontFamily: 'monospace', color: alerta ? '#dc2626' : '#16a34a' }}>
+                    {alerta && <AlertTriangle size={13} color="#dc2626" />}
+                    {fmtTimer(sec)}
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    {(valor != null) && <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: 0 }}>{fmtBRL(valor)}</p>}
+                    <p style={{ fontSize: 10, fontWeight: '700', color: '#94a3b8', letterSpacing: 0.3, margin: '2px 0 0' }}>TOTAL {vol} vol</p>
+                  </div>
+                </div>
+              </div>
+            )
+          })
+        )}
       </div>
 
       {/* Praças em carregamento */}

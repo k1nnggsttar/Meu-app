@@ -66,3 +66,25 @@ h1, h2, h3, p {
 .icon-hover:active {
   transform: translateX(2px) translateY(0px);
 }
+
+@keyframes livePulse {
+  0%   { transform: scale(1);   opacity: 1; }
+  70%  { transform: scale(2.4); opacity: 0; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #16a34a;
+}
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #16a34a;
+  animation: livePulse 1.6s ease-out infinite;
+}
