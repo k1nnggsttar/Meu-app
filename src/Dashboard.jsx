@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
-import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, Mail, AlertTriangle } from 'lucide-react'
+import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, Mail, AlertTriangle, Package } from 'lucide-react'
 import { getNomeFilial } from "./lib/filiais"
 
 function fmtTimer(sec) {
@@ -205,7 +205,10 @@ export default function Dashboard({ setPage }) {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     {(valor != null) && <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: 0 }}>{fmtBRL(valor)}</p>}
-                    <p style={{ fontSize: 10, fontWeight: '700', color: '#94a3b8', letterSpacing: 0.3, margin: '2px 0 0' }}>TOTAL {vol} vol</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', margin: '3px 0 0' }}>
+                      <Package size={13} color="#64748b" />
+                      <span style={{ fontSize: 12, color: '#64748b' }}><strong style={{ color: '#1e293b', fontWeight: '700' }}>{vol}</strong> volumes</span>
+                    </div>
                   </div>
                 </div>
               </div>
