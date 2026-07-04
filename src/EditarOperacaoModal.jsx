@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { X, ChevronDown, Plus, Camera, Search } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { FILIAIS } from './lib/filiais'
+import { montarDetalhes } from './lib/detalhes'
 import ConfirmModal from './ConfirmModal'
 import EtapasCarregamento from './EtapasCarregamento'
 
@@ -91,15 +92,18 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   // Equipe extra (local)
   const [equipeExtra, setEquipeExtra] = useState([])
 
-  // Praças carregadas (local)
-  const [pracas, setPracas] = useState([])
+  // Detalhes já salvos (praças, etapas, assinaturas, lacre)
+  const det = op.detalhes || {}
+  const [pracas, setPracas] = useState(det.pracas || [])
   const [pracaInput, setPracaInput] = useState('')
+  const [etapasData, setEtapasData] = useState(det.etapas || [])
+  const [cargaPct, setCargaPct] = useState(op.progresso || 0)
 
-  // Assinaturas / Foto / Lacre (local)
-  const [assEncarregado, setAssEncarregado] = useState('')
-  const [assConferente, setAssConferente] = useState('')
+  // Assinaturas / Foto / Lacre
+  const [assEncarregado, setAssEncarregado] = useState(det.assinaturas?.encarregado || '')
+  const [assConferente, setAssConferente] = useState(det.assinaturas?.conferente || '')
   const [fotoTraseira, setFotoTraseira] = useState(null)
-  const [lacre, setLacre] = useState('')
+  const [lacre, setLacre] = useState(det.lacre || '')
 
   const [salvando, setSalvando] = useState(false)
   const [finalizando, setFinalizando] = useState(false)
@@ -114,7 +118,8 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
     if (salvando) return
     setSalvando(true)
     setErro('')
-    const { error } = await supabase.from('operacoes').update({
+    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre })
+    const base = {
       tipoFrota: tipoFrota === 'frota' ? 'FROTA' : 'TERCEIRO',
       destino,
       origem,
@@ -123,7 +128,17 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
       aj2: aj2.trim() || null,
       aj3: aj3.trim() || null,
       arrumador: arrumador.trim() || null,
-    }).eq('id', op.id)
+    }
+    let { error } = await supabase.from('operacoes').update({ ...base, detalhes, progresso: cargaPct }).eq('id', op.id)
+    if (error) {
+      // A coluna "detalhes" pode não existir ainda — salva ao menos os campos básicos.
+      ;({ error } = await supabase.from('operacoes').update(base).eq('id', op.id))
+      if (!error) {
+        setSalvando(false)
+        setErro('Campos básicos salvos, mas os detalhes (praças/etapas/ocorrências) precisam da coluna "detalhes" na tabela.')
+        return
+      }
+    }
     setSalvando(false)
     if (error) {
       setErro(error.message || 'Erro ao salvar.')
@@ -259,7 +274,7 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
             )}
           </div>
 
-          <EtapasCarregamento pracasDisponiveis={pracas} />
+          <EtapasCarregamento pracasDisponiveis={pracas} initialEtapas={det.etapas || []} onResumoChange={r => setCargaPct(r.pct)} onEtapasChange={setEtapasData} />
 
           {/* Assinaturas */}
           <div style={{ marginBottom: 20 }}>

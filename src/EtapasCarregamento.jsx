@@ -22,8 +22,13 @@ function novoId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `etapa-${Math.random().toString(36).slice(2)}`
 }
 
-export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoChange }) {
-  const [etapas, setEtapas] = useState([])
+export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoChange, onEtapasChange, initialEtapas }) {
+  const [etapas, setEtapas] = useState(() => Array.isArray(initialEtapas) ? initialEtapas : [])
+
+  useEffect(() => {
+    onEtapasChange?.(etapas)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [etapas])
 
   const update = (id, patch) => setEtapas(e => e.map(et => et.id === id ? { ...et, ...patch } : et))
   const remove = (id) => setEtapas(e => e.filter(et => et.id !== id))
@@ -134,7 +139,7 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
                                 <td style={{ padding: '6px 8px', color: '#334155' }}>{o.nf || '—'}</td>
                                 <td style={{ padding: '6px 8px', color: '#334155', fontWeight: '700' }}>{o.codigo || '—'}</td>
                                 <td style={{ padding: '6px 8px', color: '#64748b' }}>{o.descricao || (oc ? oc.descricao : '—')}</td>
-                                <td style={{ padding: '6px 8px', textAlign: 'center' }}>{o.anexo ? '📎' : '—'}</td>
+                                <td style={{ padding: '6px 8px', textAlign: 'center' }}>{(o.anexo || o.anexoNome) ? '📎' : '—'}</td>
                                 <td style={{ padding: '6px 8px', textAlign: 'center' }}>{o.ssw ? <Check size={13} color="#16a34a" /> : '—'}</td>
                               </tr>
                             )

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react"
 import { X, Paperclip, Search, Plus, ChevronDown, Camera } from 'lucide-react'
 import { supabase } from "./lib/supabase"
 import { uploadFotosOperacao } from "./lib/fotos"
+import { montarDetalhes } from "./lib/detalhes"
 import { FILIAIS } from "./lib/filiais"
 import EtapasCarregamento from "./EtapasCarregamento"
 
@@ -129,6 +130,10 @@ export default function CadastrarModal({ onClose, onSalvo }) {
   const [fotoTraseira, setFotoTraseira] = useState(null)
   const [lacre, setLacre] = useState('')
   const [cargaPct, setCargaPct] = useState(0)
+  const [etapasData, setEtapasData] = useState([])
+  const [opId, setOpId] = useState(null)
+  const [salvandoDetalhes, setSalvandoDetalhes] = useState(false)
+  const [erroDetalhes, setErroDetalhes] = useState('')
 
   // validações
   const checklistCompleto = CHECKLIST.every(i => respostas[i.id])
@@ -173,6 +178,8 @@ export default function CadastrarModal({ onClose, onSalvo }) {
       return
     }
 
+    setOpId(nova?.id || null)
+
     // Envia as fotos do checklist + traseira ao Storage (não bloqueia o cadastro se falhar).
     try {
       const arquivos = [...Object.values(fotos), fotoTraseira].filter(Boolean)
@@ -187,6 +194,22 @@ export default function CadastrarModal({ onClose, onSalvo }) {
     setSalvando(false)
     onSalvo?.()
     setEtapa(3)
+  }
+
+  const salvarDetalhes = async () => {
+    if (salvandoDetalhes) return
+    setErroDetalhes('')
+    setSalvandoDetalhes(true)
+    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre })
+    const { error } = await supabase.from('operacoes').update({ detalhes, progresso: cargaPct }).eq('id', opId)
+    setSalvandoDetalhes(false)
+    if (error) {
+      console.error('Erro ao salvar detalhes:', error.message)
+      setErroDetalhes('Não foi possível salvar os detalhes. Verifique se a coluna "detalhes" existe na tabela.')
+      return
+    }
+    onSalvo?.()
+    onClose()
   }
 
   return (
@@ -369,7 +392,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
                 )}
               </div>
 
-              <EtapasCarregamento pracasDisponiveis={pracas} onResumoChange={r => setCargaPct(r.pct)} />
+              <EtapasCarregamento pracasDisponiveis={pracas} onResumoChange={r => setCargaPct(r.pct)} onEtapasChange={setEtapasData} />
 
               {/* Assinaturas */}
               <div style={{ marginBottom: 20 }}>
@@ -399,6 +422,12 @@ export default function CadastrarModal({ onClose, onSalvo }) {
                 <label style={LBL}>Lacre</label>
                 <input style={INP} value={lacre} onChange={e => setLacre(e.target.value)} />
               </div>
+
+              {erroDetalhes && (
+                <p style={{ fontSize: 12, color: '#dc2626', padding: '10px 14px', background: '#fef2f2', borderRadius: 8, border: '1px solid #fecaca', margin: '8px 0 0', fontWeight: '600' }}>
+                  {erroDetalhes}
+                </p>
+              )}
             </>
           )}
         </div>
@@ -421,9 +450,14 @@ export default function CadastrarModal({ onClose, onSalvo }) {
             </button>
           )}
           {etapa === 3 && (
-            <button type="button" onClick={onClose} style={{ flex: 1, padding: 13, borderRadius: 8, border: 'none', fontSize: 14, fontWeight: '600', color: 'white', background: '#2563eb', cursor: 'pointer' }}>
-              Fechar
-            </button>
+            <>
+              <button type="button" onClick={onClose} style={{ flex: 1, padding: 13, borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', fontSize: 14, fontWeight: '600', color: '#64748b', cursor: 'pointer' }}>
+                Fechar
+              </button>
+              <button type="button" onClick={salvarDetalhes} disabled={salvandoDetalhes} style={{ flex: 2, padding: 13, borderRadius: 8, border: 'none', fontSize: 14, fontWeight: '600', color: 'white', background: salvandoDetalhes ? '#93c5fd' : '#2563eb', cursor: salvandoDetalhes ? 'default' : 'pointer' }}>
+                {salvandoDetalhes ? 'Salvando...' : 'Salvar'}
+              </button>
+            </>
           )}
         </div>
       </div>
