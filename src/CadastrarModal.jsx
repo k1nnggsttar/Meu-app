@@ -128,6 +128,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
   const [assConferente, setAssConferente] = useState('')
   const [fotoTraseira, setFotoTraseira] = useState(null)
   const [lacre, setLacre] = useState('')
+  const [cargaPct, setCargaPct] = useState(0)
 
   // validações
   const checklistCompleto = CHECKLIST.every(i => respostas[i.id])
@@ -160,7 +161,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
       aj2: aj2.trim() || null,
       aj3: aj3.trim() || null,
       arrumador: arrumador.trim() || null,
-      progresso: 0,
+      progresso: cargaPct,
       status: 'ativo',
       paused: false,
       paused_duration: 0,
@@ -368,7 +369,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
                 )}
               </div>
 
-              <EtapasCarregamento pracasDisponiveis={pracas} />
+              <EtapasCarregamento pracasDisponiveis={pracas} onResumoChange={r => setCargaPct(r.pct)} />
 
               {/* Assinaturas */}
               <div style={{ marginBottom: 20 }}>

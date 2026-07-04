@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Trash2, Edit2, Check, Lock, Paperclip } from 'lucide-react'
 import truckImg from './assets/truck.jpg'
 import OcorrenciaSelect from './OcorrenciaSelect'
@@ -22,7 +22,7 @@ function novoId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `etapa-${Math.random().toString(36).slice(2)}`
 }
 
-export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
+export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoChange }) {
   const [etapas, setEtapas] = useState([])
 
   const update = (id, patch) => setEtapas(e => e.map(et => et.id === id ? { ...et, ...patch } : et))
@@ -59,6 +59,12 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
 
   const totalMetros = etapas.reduce((s, et) => s + (Number(et.metros) || 0), 0)
   const restamM = Math.max(0, TRUCK_TOTAL_M - totalMetros)
+  const pctCarga = TRUCK_TOTAL_M > 0 ? Math.min(100, Math.round((totalMetros / TRUCK_TOTAL_M) * 100)) : 0
+
+  useEffect(() => {
+    onResumoChange?.({ metros: totalMetros, pct: pctCarga })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalMetros, pctCarga])
 
   const etapasFechadas = etapas.filter(et => et.fechada)
   const metrosComposicao = etapasFechadas.reduce((s, et) => s + (Number(et.metros) || 0), 0)

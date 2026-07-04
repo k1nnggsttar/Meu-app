@@ -34,6 +34,15 @@ export default function OperacaoCard({ op, onAtualizar }) {
   const [editando, setEditando] = useState(false)
   const [confirmAcao, setConfirmAcao] = useState(null) // null | 'pausar' | 'retomar'
   const [finalizModal, setFinalizModal] = useState(false)
+  const [avisoOcioso, setAvisoOcioso] = useState(false)
+
+  const cargaPct = op.progresso || 0
+  const ocioso = cargaPct < 100
+
+  const pedirFinalizar = () => {
+    if (ocioso) setAvisoOcioso(true)
+    else setFinalizModal(true)
+  }
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000)
@@ -177,7 +186,7 @@ export default function OperacaoCard({ op, onAtualizar }) {
           {isPaused ? <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Play size={14} /> Retomar</span> : <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Pause size={14} /> Pausar</span>}
         </button>
         <button
-          onClick={() => setFinalizModal(true)}
+          onClick={pedirFinalizar}
           disabled={finalizando}
           style={{ flex: 1, padding: '11px 0', border: '1px solid #e2e8f0', borderRadius: 10, cursor: finalizando ? 'default' : 'pointer', background: 'white', color: finalizando ? '#94a3b8' : '#16a34a', fontSize: 13, fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
         >
@@ -210,6 +219,17 @@ export default function OperacaoCard({ op, onAtualizar }) {
             if (acao === 'pausar') pausar()
             else if (acao === 'retomar') retomar()
           }}
+        />
+      )}
+
+      {avisoOcioso && (
+        <ConfirmModal
+          titulo="Quer finalizar o caminhão mesmo estando ocioso?"
+          mensagem={`Este caminhão está com apenas ${cargaPct}% da capacidade ocupada — ainda há espaço vazio na carreta (menos de 15 m carregados). Finalizar agora encerra o carregamento com o veículo ocioso. Deseja continuar mesmo assim?`}
+          confirmText="Sim, finalizar mesmo assim"
+          confirmColor="#f59e0b"
+          onCancel={() => setAvisoOcioso(false)}
+          onConfirm={() => { setAvisoOcioso(false); setFinalizModal(true) }}
         />
       )}
 
