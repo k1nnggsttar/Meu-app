@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { Plus, Trash2, Edit2, Check, Lock } from 'lucide-react'
+import { Plus, Trash2, Edit2, Check, Lock, Paperclip } from 'lucide-react'
 import truckImg from './assets/truck.jpg'
+import OcorrenciaSelect from './OcorrenciaSelect'
+import { getOcorrencia } from './lib/ocorrencias'
 
 const TRUCK_TOTAL_M = 15
 const CORES = ['#16a34a', '#2563eb', '#d97706', '#db2777', '#7c3aed', '#0891b2']
@@ -27,7 +29,7 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
   const remove = (id) => setEtapas(e => e.filter(et => et.id !== id))
 
   const addEtapa = () => {
-    setEtapas(e => [...e, { id: novoId(), pracas: [], metros: 0.5, volumes: '', fechada: false }])
+    setEtapas(e => [...e, { id: novoId(), pracas: [], metros: 0.5, volumes: '', ocorrencias: [], fechada: false }])
   }
 
   const togglePraca = (id, codigo) => {
@@ -37,6 +39,23 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
       return { ...et, pracas: tem ? et.pracas.filter(c => c !== codigo) : [...et.pracas, codigo] }
     }))
   }
+
+  const addOcorrencia = (etapaId) => {
+    setEtapas(e => e.map(et => et.id === etapaId
+      ? { ...et, ocorrencias: [...(et.ocorrencias || []), { id: novoId(), nf: '', codigo: '', descricao: '', anexo: null, ssw: false }] }
+      : et))
+  }
+  const updateOcorrencia = (etapaId, ocorrId, patch) => {
+    setEtapas(e => e.map(et => et.id === etapaId
+      ? { ...et, ocorrencias: (et.ocorrencias || []).map(o => o.id === ocorrId ? { ...o, ...patch } : o) }
+      : et))
+  }
+  const removeOcorrencia = (etapaId, ocorrId) => {
+    setEtapas(e => e.map(et => et.id === etapaId
+      ? { ...et, ocorrencias: (et.ocorrencias || []).filter(o => o.id !== ocorrId) }
+      : et))
+  }
+  const sswPendentes = (et) => (et.ocorrencias || []).filter(o => !o.ssw).length
 
   const totalMetros = etapas.reduce((s, et) => s + (Number(et.metros) || 0), 0)
   const restamM = Math.max(0, TRUCK_TOTAL_M - totalMetros)
@@ -89,7 +108,7 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
                     </div>
                   </div>
                   <p style={{ fontSize: 11, fontWeight: '600', color: '#64748b', margin: '0 0 6px' }}>📋 Ocorrências</p>
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                       <thead>
                         <tr style={{ background: '#f8fafc' }}>
@@ -97,7 +116,22 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr><td colSpan={5} style={{ textAlign: 'center', padding: 10, color: '#94a3b8' }}>Sem ocorrências</td></tr>
+                        {(et.ocorrencias || []).length === 0 ? (
+                          <tr><td colSpan={5} style={{ textAlign: 'center', padding: 10, color: '#94a3b8' }}>Sem ocorrências</td></tr>
+                        ) : (
+                          et.ocorrencias.map(o => {
+                            const oc = getOcorrencia(o.codigo)
+                            return (
+                              <tr key={o.id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                                <td style={{ padding: '6px 8px', color: '#334155' }}>{o.nf || '—'}</td>
+                                <td style={{ padding: '6px 8px', color: '#334155', fontWeight: '700' }}>{o.codigo || '—'}</td>
+                                <td style={{ padding: '6px 8px', color: '#64748b' }}>{o.descricao || (oc ? oc.descricao : '—')}</td>
+                                <td style={{ padding: '6px 8px', textAlign: 'center' }}>{o.anexo ? '📎' : '—'}</td>
+                                <td style={{ padding: '6px 8px', textAlign: 'center' }}>{o.ssw ? <Check size={13} color="#16a34a" /> : '—'}</td>
+                              </tr>
+                            )
+                          })
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -143,10 +177,78 @@ export default function EtapasCarregamento({ pracasDisponiveis = [] }) {
                       style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13, boxSizing: 'border-box' }} />
                   </div>
                 </div>
-                <button type="button" disabled={et.pracas.length === 0} onClick={() => update(et.id, { fechada: true })}
-                  style={{ width: '100%', padding: 10, border: 'none', borderRadius: 8, background: et.pracas.length === 0 ? '#e2e8f0' : '#16a34a', color: 'white', fontSize: 13, fontWeight: '700', cursor: et.pracas.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  <Check size={14} /> Fechar etapa
+                {/* Ocorrências */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 6px' }}>
+                  <p style={{ fontSize: 11, fontWeight: '600', color: '#64748b', margin: 0 }}>📋 Ocorrências</p>
+                  {sswPendentes(et) > 0 && (
+                    <span style={{ fontSize: 11, fontWeight: '700', color: '#dc2626' }}>{sswPendentes(et)} pendente(s) SSW</span>
+                  )}
+                </div>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'auto', marginBottom: 8 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, minWidth: 380 }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc' }}>
+                        <th style={THS}>NF</th><th style={THS}>OCORR.</th><th style={THS}>DESCRIÇÃO</th>
+                        <th style={{ ...THS, textAlign: 'center' }}>ANX</th><th style={{ ...THS, textAlign: 'center' }}>SSW</th><th style={THS}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(et.ocorrencias || []).length === 0 ? (
+                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: 10, color: '#94a3b8' }}>Sem ocorrências</td></tr>
+                      ) : (
+                        et.ocorrencias.map(o => (
+                          <tr key={o.id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: 4, minWidth: 70 }}>
+                              <input value={o.nf} onChange={e => updateOcorrencia(et.id, o.id, { nf: e.target.value })}
+                                style={{ width: '100%', padding: '6px 7px', border: '1px solid #e2e8f0', borderRadius: 5, fontSize: 11, boxSizing: 'border-box' }} />
+                            </td>
+                            <td style={{ padding: 4, minWidth: 130 }}>
+                              <OcorrenciaSelect value={o.codigo} onChange={cod => {
+                                const oc = getOcorrencia(cod)
+                                updateOcorrencia(et.id, o.id, { codigo: cod, descricao: oc ? oc.descricao : o.descricao })
+                              }} />
+                            </td>
+                            <td style={{ padding: 4, minWidth: 120 }}>
+                              <input value={o.descricao} onChange={e => updateOcorrencia(et.id, o.id, { descricao: e.target.value })}
+                                style={{ width: '100%', padding: '6px 7px', border: '1px solid #e2e8f0', borderRadius: 5, fontSize: 11, boxSizing: 'border-box' }} />
+                            </td>
+                            <td style={{ padding: 4, textAlign: 'center' }}>
+                              <label style={{ cursor: 'pointer', display: 'inline-flex' }} title={o.anexo ? o.anexo.name : 'Anexar'}>
+                                <Paperclip size={15} color={o.anexo ? '#16a34a' : '#94a3b8'} />
+                                <input type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
+                                  onChange={e => { const f = e.target.files?.[0]; if (f) updateOcorrencia(et.id, o.id, { anexo: f }) }} />
+                              </label>
+                            </td>
+                            <td style={{ padding: 4, textAlign: 'center' }}>
+                              <input type="checkbox" checked={o.ssw} onChange={e => updateOcorrencia(et.id, o.id, { ssw: e.target.checked })}
+                                style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#16a34a' }} />
+                            </td>
+                            <td style={{ padding: 4, textAlign: 'center' }}>
+                              <Trash2 size={13} color="#cbd5e1" style={{ cursor: 'pointer' }} onClick={() => removeOcorrencia(et.id, o.id)} />
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <button type="button" onClick={() => addOcorrencia(et.id)}
+                  style={{ width: '100%', padding: 8, border: '1px dashed #cbd5e1', borderRadius: 8, background: 'transparent', color: '#2563eb', fontSize: 12, fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 12 }}>
+                  <Plus size={13} /> Adicionar ocorrência
                 </button>
+
+                {(() => {
+                  const semPraca = et.pracas.length === 0
+                  const pend = sswPendentes(et)
+                  const bloqueado = semPraca || pend > 0
+                  return (
+                    <button type="button" disabled={bloqueado} onClick={() => update(et.id, { fechada: true })}
+                      style={{ width: '100%', padding: 10, border: 'none', borderRadius: 8, background: bloqueado ? '#e2e8f0' : '#16a34a', color: bloqueado ? '#94a3b8' : 'white', fontSize: 13, fontWeight: '700', cursor: bloqueado ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      title={pend > 0 ? 'Marque todos os SSW antes de fechar a etapa' : semPraca ? 'Selecione ao menos uma praça' : ''}>
+                      <Lock size={14} /> {pend > 0 ? `Fechar etapa (${pend} SSW pendente)` : 'Fechar etapa'}
+                    </button>
+                  )
+                })()}
               </div>
             )
           })}
