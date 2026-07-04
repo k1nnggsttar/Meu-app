@@ -177,13 +177,20 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
                   </div>
                 )}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: '600', color: '#64748b', marginBottom: 5 }}>Metros (máx {TRUCK_TOTAL_M} m)</label>
-                    <select value={et.metros} onChange={e => update(et.id, { metros: Number(e.target.value) })}
-                      style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13, background: 'white', boxSizing: 'border-box' }}>
-                      {OPCOES_METROS.map(n => <option key={n} value={n}>{fmtMetros(n)}</option>)}
-                    </select>
-                  </div>
+                  {(() => {
+                    const usadoOutras = totalMetros - (Number(et.metros) || 0)
+                    const maxDisp = Math.max(0, TRUCK_TOTAL_M - usadoOutras)
+                    const opcoes = OPCOES_METROS.filter(n => n <= maxDisp + 1e-9 || n === Number(et.metros))
+                    return (
+                      <div>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: '600', color: '#64748b', marginBottom: 5 }}>Metros (máx {fmtMetros(maxDisp)})</label>
+                        <select value={et.metros} onChange={e => update(et.id, { metros: Number(e.target.value) })}
+                          style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13, background: 'white', boxSizing: 'border-box' }}>
+                          {opcoes.map(n => <option key={n} value={n}>{fmtMetros(n)}</option>)}
+                        </select>
+                      </div>
+                    )
+                  })()}
                   <div>
                     <label style={{ display: 'block', fontSize: 11, fontWeight: '600', color: '#64748b', marginBottom: 5 }}>Volumes</label>
                     <input type="number" min="0" value={et.volumes} onChange={e => update(et.id, { volumes: e.target.value })}
