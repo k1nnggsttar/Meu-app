@@ -56,6 +56,8 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
       : et))
   }
   const sswPendentes = (et) => (et.ocorrencias || []).filter(o => !o.ssw).length
+  const anexoPendentes = (et) => (et.ocorrencias || []).filter(o => !o.anexo).length
+  const ocorrPendentes = (et) => (et.ocorrencias || []).filter(o => !o.ssw || !o.anexo).length
 
   const totalMetros = etapas.reduce((s, et) => s + (Number(et.metros) || 0), 0)
   const restamM = Math.max(0, TRUCK_TOTAL_M - totalMetros)
@@ -184,11 +186,16 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
                   </div>
                 </div>
                 {/* Ocorrências */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, margin: '4px 0 6px', flexWrap: 'wrap' }}>
                   <p style={{ fontSize: 11, fontWeight: '600', color: '#64748b', margin: 0 }}>📋 Ocorrências</p>
-                  {sswPendentes(et) > 0 && (
-                    <span style={{ fontSize: 11, fontWeight: '700', color: '#dc2626' }}>{sswPendentes(et)} pendente(s) SSW</span>
-                  )}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {sswPendentes(et) > 0 && (
+                      <span style={{ fontSize: 11, fontWeight: '700', color: '#dc2626' }}>{sswPendentes(et)} pendente(s) SSW</span>
+                    )}
+                    {anexoPendentes(et) > 0 && (
+                      <span style={{ fontSize: 11, fontWeight: '700', color: '#dc2626' }}>{anexoPendentes(et)} sem anexo</span>
+                    )}
+                  </div>
                 </div>
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'auto', marginBottom: 8 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, minWidth: 380 }}>
@@ -245,13 +252,18 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
 
                 {(() => {
                   const semPraca = et.pracas.length === 0
-                  const pend = sswPendentes(et)
+                  const ssw = sswPendentes(et)
+                  const anx = anexoPendentes(et)
+                  const pend = ocorrPendentes(et)
                   const bloqueado = semPraca || pend > 0
+                  const motivos = []
+                  if (ssw > 0) motivos.push(`${ssw} SSW`)
+                  if (anx > 0) motivos.push(`${anx} anexo`)
                   return (
                     <button type="button" disabled={bloqueado} onClick={() => update(et.id, { fechada: true })}
                       style={{ width: '100%', padding: 10, border: 'none', borderRadius: 8, background: bloqueado ? '#e2e8f0' : '#16a34a', color: bloqueado ? '#94a3b8' : 'white', fontSize: 13, fontWeight: '700', cursor: bloqueado ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                      title={pend > 0 ? 'Marque todos os SSW antes de fechar a etapa' : semPraca ? 'Selecione ao menos uma praça' : ''}>
-                      <Lock size={14} /> {pend > 0 ? `Fechar etapa (${pend} SSW pendente)` : 'Fechar etapa'}
+                      title={pend > 0 ? 'Marque o SSW e anexe o arquivo de cada ocorrência antes de fechar a etapa' : semPraca ? 'Selecione ao menos uma praça' : ''}>
+                      <Lock size={14} /> {pend > 0 ? `Fechar etapa (${motivos.join(' + ')} pendente)` : 'Fechar etapa'}
                     </button>
                   )
                 })()}
