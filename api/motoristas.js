@@ -38,12 +38,18 @@ async function baixarXlsx(shareUrl) {
 
 const DIACRIT = new RegExp('[\\u0300-\\u036f]', 'g')
 const norm = (s) => String(s || '').trim().toLowerCase().normalize('NFD').replace(DIACRIT, '')
+const fmtVal = (v) => {
+  if (v instanceof Date && !isNaN(v)) {
+    return `${String(v.getDate()).padStart(2, '0')}/${String(v.getMonth() + 1).padStart(2, '0')}/${v.getFullYear()}`
+  }
+  return String(v ?? '').trim()
+}
 
 export default async function handler(req, res) {
   try {
     const shareUrl = process.env.MOTORISTAS_XLSX_URL || DEFAULT_URL
     const buf = await baixarXlsx(shareUrl)
-    const wb = XLSX.read(buf, { type: 'buffer' })
+    const wb = XLSX.read(buf, { type: 'buffer', cellDates: true })
     const ws = wb.Sheets['Relação Motoristas'] || wb.Sheets[wb.SheetNames[0]]
     const rows = XLSX.utils.sheet_to_json(ws, { defval: '' })
 
@@ -55,12 +61,15 @@ export default async function handler(req, res) {
     }
 
     const motoristas = rows.map(r => ({
-      matricula: String(pick(r, 'Matrícula', 'Matricula')).trim(),
-      nome: String(pick(r, 'Nome')).trim(),
-      cargo: String(pick(r, 'Cargo')).trim(),
-      situacao: String(pick(r, 'Situação', 'Situacao')).trim(),
-      filial: String(pick(r, 'Filial')).trim(),
-      tipo: String(pick(r, 'Tipo')).trim(),
+      matricula: fmtVal(pick(r, 'Matrícula', 'Matricula')),
+      nome: fmtVal(pick(r, 'Nome')),
+      admissao: fmtVal(pick(r, 'Admissão', 'Admissao')),
+      cargo: fmtVal(pick(r, 'Cargo')),
+      situacao: fmtVal(pick(r, 'Situação', 'Situacao')),
+      filial: fmtVal(pick(r, 'Filial')),
+      tipo: fmtVal(pick(r, 'Tipo')),
+      dataTreinamento: fmtVal(pick(r, 'Data Treinamento')),
+      manual: fmtVal(pick(r, 'Manual do Motorista', 'Manual')),
     })).filter(m => m.nome)
 
     res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=600')

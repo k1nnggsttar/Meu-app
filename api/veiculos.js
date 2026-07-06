@@ -58,6 +58,9 @@ export default async function handler(req, res) {
       marca: String(pick(r, 'MARCA', 'Marca')).trim(),
       filial: String(pick(r, 'FILIAL', 'Filial')).trim(),
       ano: String(pick(r, 'ANO MODELO', 'Ano Modelo', 'Ano')).trim(),
+      farma: String(pick(r, 'Farma')).trim(),
+      eqMedicao: String(pick(r, 'Equipamento Medição', 'Equipamento Medicao')).trim(),
+      eqResfriamento: String(pick(r, 'Equipamento Resfriamento')).trim(),
     })).filter(v => v.placa)
 
     res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=600')

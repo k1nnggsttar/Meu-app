@@ -5,6 +5,7 @@ import { supabase } from './lib/supabase'
 import { getNomeFilial } from './lib/filiais'
 import { carregarMotoristas, isMotoristaAtivo } from './lib/motoristas'
 import { carregarVeiculos } from './lib/veiculos'
+import DetalheModal from './DetalheModal'
 
 function fmtHora(iso) {
   const d = new Date(iso)
@@ -388,6 +389,7 @@ function StatPill({ cor, label }) {
 function SubMotoristas({ motoristas, onVoltar }) {
   const [busca, setBusca] = useState('')
   const [filtroFilial, setFiltroFilial] = useState('')
+  const [sel, setSel] = useState(null)
   const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '')
   const filiais = [...new Set(motoristas.map(m => m.filial).filter(Boolean))].sort()
   const q = norm(busca.trim())
@@ -430,10 +432,10 @@ function SubMotoristas({ motoristas, onVoltar }) {
         filtrados.map(m => {
           const ativo = isMotoristaAtivo(m)
           return (
-            <div key={m.matricula + m.nome} className="card-hover" style={{
+            <div key={m.matricula + m.nome} className="card-hover" onClick={() => setSel(m)} style={{
               background: 'white', borderRadius: 12, padding: '12px 16px',
               marginBottom: 8, border: '1px solid #e2e8f0',
-              display: 'flex', alignItems: 'center', gap: 12
+              display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer'
             }}>
               <div style={{
                 width: 38, height: 38, borderRadius: 999, background: ativo ? '#eff6ff' : '#f8fafc',
@@ -461,6 +463,28 @@ function SubMotoristas({ motoristas, onVoltar }) {
           )
         })
       )}
+
+      {sel && (
+        <DetalheModal
+          titulo={sel.nome}
+          subtitulo={`Matrícula ${sel.matricula}`}
+          badge={isMotoristaAtivo(sel)
+            ? { label: 'TRABALHANDO', cor: '#16a34a', bg: '#dcfce7' }
+            : { label: (sel.situacao || 'INATIVO').replace(/^\d+\s*-\s*/, '').toUpperCase(), cor: '#64748b', bg: '#f1f5f9' }}
+          icone={<Users size={22} color="#2563eb" />}
+          campos={[
+            { label: 'Matrícula', valor: sel.matricula },
+            { label: 'Cargo', valor: sel.cargo },
+            { label: 'Situação', valor: sel.situacao },
+            { label: 'Filial', valor: sel.filial },
+            { label: 'Tipo', valor: sel.tipo },
+            { label: 'Admissão', valor: sel.admissao },
+            { label: 'Data de treinamento', valor: sel.dataTreinamento },
+            { label: 'Manual do motorista', valor: sel.manual },
+          ]}
+          onClose={() => setSel(null)}
+        />
+      )}
     </div>
   )
 }
@@ -468,6 +492,7 @@ function SubMotoristas({ motoristas, onVoltar }) {
 function SubVeiculos({ veiculos, onVoltar }) {
   const [busca, setBusca] = useState('')
   const [filtroFilial, setFiltroFilial] = useState('')
+  const [sel, setSel] = useState(null)
   const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '')
   const filiais = [...new Set(veiculos.map(v => v.filial).filter(Boolean))].sort()
   const q = norm(busca.trim())
@@ -508,10 +533,10 @@ function SubVeiculos({ veiculos, onVoltar }) {
         <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, marginTop: 40 }}>Nenhum veículo encontrado.</p>
       ) : (
         filtrados.map((v, i) => (
-          <div key={v.placa + i} className="card-hover" style={{
+          <div key={v.placa + i} className="card-hover" onClick={() => setSel(v)} style={{
             background: 'white', borderRadius: 12, padding: '12px 16px',
             marginBottom: 8, border: '1px solid #e2e8f0',
-            display: 'flex', alignItems: 'center', gap: 12
+            display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer'
           }}>
             <div style={{
               width: 38, height: 38, borderRadius: 10, background: '#fff7ed',
@@ -532,6 +557,26 @@ function SubVeiculos({ veiculos, onVoltar }) {
             )}
           </div>
         ))
+      )}
+
+      {sel && (
+        <DetalheModal
+          titulo={sel.placa}
+          subtitulo={[sel.marca, sel.modelo].filter(Boolean).join(' ')}
+          badge={sel.tipo ? { label: sel.tipo.toUpperCase(), cor: '#ea580c', bg: '#fff7ed' } : null}
+          icone={<Truck size={22} color="#ea580c" />}
+          campos={[
+            { label: 'Marca', valor: sel.marca },
+            { label: 'Modelo', valor: sel.modelo },
+            { label: 'Tipo', valor: sel.tipo },
+            { label: 'Ano modelo', valor: sel.ano },
+            { label: 'Filial', valor: sel.filial },
+            { label: 'Farma', valor: sel.farma },
+            { label: 'Equip. medição', valor: sel.eqMedicao },
+            { label: 'Equip. resfriamento', valor: sel.eqResfriamento },
+          ]}
+          onClose={() => setSel(null)}
+        />
       )}
     </div>
   )
