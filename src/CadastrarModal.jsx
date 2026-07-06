@@ -5,6 +5,7 @@ import { uploadFotosOperacao } from "./lib/fotos"
 import { montarDetalhes } from "./lib/detalhes"
 import { FILIAIS, FILIAIS_ROTA } from "./lib/filiais"
 import EtapasCarregamento from "./EtapasCarregamento"
+import ConferenteSelect from "./ConferenteSelect"
 
 const CHECKLIST = [
   { id: 'bau_furado',          label: 'Baú furado',           problemAnswer: 'sim' },
@@ -129,6 +130,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
   const [assConferente, setAssConferente] = useState('')
   const [fotoTraseira, setFotoTraseira] = useState(null)
   const [lacre, setLacre] = useState('')
+  const [conferente, setConferente] = useState('')
   const [cargaPct, setCargaPct] = useState(0)
   const [etapasData, setEtapasData] = useState([])
   const [opId, setOpId] = useState(null)
@@ -200,7 +202,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
     if (salvandoDetalhes) return
     setErroDetalhes('')
     setSalvandoDetalhes(true)
-    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre })
+    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente })
     const { error } = await supabase.from('operacoes').update({ detalhes, progresso: cargaPct }).eq('id', opId)
     setSalvandoDetalhes(false)
     if (error) {
@@ -293,7 +295,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
                 </div>
                 <div style={{ marginTop: 10 }}>
                   <label style={LBL}>Conferente</label>
-                  <input style={DIS} readOnly placeholder="Em breve" />
+                  <ConferenteSelect value={conferente} onChange={setConferente} />
                 </div>
                 {equipeExtra.map((v, i) => (
                   <div key={i} style={{ marginTop: 10 }}>

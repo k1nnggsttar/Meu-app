@@ -1,6 +1,7 @@
 import { X, MapPin, Lock, Check } from 'lucide-react'
 import { getNomeFilial } from './lib/filiais'
 import { getOcorrencia } from './lib/ocorrencias'
+import { getConferente } from './lib/conferentes'
 
 const THS = { padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: '700', color: '#64748b', borderBottom: '1px solid #e2e8f0' }
 
@@ -16,6 +17,7 @@ export default function ConcluidoDetalhesModal({ op, onClose }) {
   const det = op.detalhes || {}
   const etapas = det.etapas || []
   const pracas = det.pracas || []
+  const conf = getConferente(det.conferente)
 
   return (
     <div onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
@@ -52,6 +54,7 @@ export default function ConcluidoDetalhesModal({ op, onClose }) {
               <span style={{ fontSize: 12, color: '#64748b' }}>Destinatário: {op.destino} · {getNomeFilial(op.destino)}</span>
             </div>
             {op.motorista && <span style={{ fontSize: 12, color: '#64748b' }}>🚛 Motorista: {op.motorista}</span>}
+            {conf && <span style={{ fontSize: 12, color: '#64748b' }}>🧾 Conferente: {conf.codigo} · {conf.apelido} — {conf.nome}</span>}
           </div>
 
           {/* Valores */}

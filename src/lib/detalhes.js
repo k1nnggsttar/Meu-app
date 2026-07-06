@@ -20,11 +20,12 @@ export function serializarEtapas(etapas) {
 }
 
 // Monta o objeto `detalhes` gravado na operação.
-export function montarDetalhes({ pracas, etapas, assEncarregado, assConferente, lacre }) {
+export function montarDetalhes({ pracas, etapas, assEncarregado, assConferente, lacre, conferente }) {
   return {
     pracas: pracas || [],
     etapas: serializarEtapas(etapas),
     assinaturas: { encarregado: assEncarregado || '', conferente: assConferente || '' },
     lacre: lacre || '',
+    conferente: conferente || null,
   }
 }

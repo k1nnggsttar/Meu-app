@@ -5,6 +5,7 @@ import { FILIAIS, FILIAIS_ROTA } from './lib/filiais'
 import { montarDetalhes } from './lib/detalhes'
 import ConfirmModal from './ConfirmModal'
 import EtapasCarregamento from './EtapasCarregamento'
+import ConferenteSelect from './ConferenteSelect'
 
 const INP = {
   width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0',
@@ -104,6 +105,7 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   const [assConferente, setAssConferente] = useState(det.assinaturas?.conferente || '')
   const [fotoTraseira, setFotoTraseira] = useState(null)
   const [lacre, setLacre] = useState(det.lacre || '')
+  const [conferente, setConferente] = useState(det.conferente || '')
 
   const [salvando, setSalvando] = useState(false)
   const [finalizando, setFinalizando] = useState(false)
@@ -118,7 +120,7 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
     if (salvando) return
     setSalvando(true)
     setErro('')
-    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre })
+    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente })
     const base = {
       tipoFrota: tipoFrota === 'frota' ? 'FROTA' : 'TERCEIRO',
       destino,
@@ -198,7 +200,7 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
             </div>
             <div style={{ marginTop: 10 }}>
               <label style={LBL}>Conferente</label>
-              <input style={DIS} readOnly placeholder="Em breve" />
+              <ConferenteSelect value={conferente} onChange={setConferente} />
             </div>
             {equipeExtra.map((v, i) => (
               <div key={i} style={{ marginTop: 10 }}>
