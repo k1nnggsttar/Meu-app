@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx'
 import { supabase } from './lib/supabase'
 import { getNomeFilial } from './lib/filiais'
 import { carregarMotoristas, isMotoristaAtivo } from './lib/motoristas'
+import { carregarVeiculos } from './lib/veiculos'
 
 function fmtHora(iso) {
   const d = new Date(iso)
@@ -21,6 +22,7 @@ function fmtData(iso) {
 export default function Cadastros() {
   const [operacoes, setOperacoes] = useState([])
   const [motoristas, setMotoristas] = useState([])
+  const [veiculos, setVeiculos] = useState([])
   const [busca, setBusca] = useState('')
   const [secao, setSecao] = useState(null) // null | 'motoristas' | 'veiculos'
 
@@ -29,9 +31,11 @@ export default function Cadastros() {
       setOperacoes(data || [])
     })
     carregarMotoristas().then(setMotoristas)
+    carregarVeiculos().then(setVeiculos)
   }, [])
 
   const motoristasAtivosPlan = motoristas.filter(isMotoristaAtivo)
+  const veiculosCavalo = veiculos.filter(v => String(v.tipo).toUpperCase().includes('CAVALO'))
 
   const hoje = new Date().toDateString()
 
@@ -130,16 +134,17 @@ export default function Cadastros() {
     wsMot['!cols'] = [12, 28, 10, 26, 18, 16].map(w => ({ wch: w }))
     XLSX.utils.book_append_sheet(wb, wsMot, 'Motoristas')
 
-    // Aba 3: Veículos
-    const linhasVei = listaVeiculos.map(v => ({
+    // Aba 3: Veículos (da planilha)
+    const linhasVei = veiculos.map(v => ({
       'Placa': v.placa,
-      'Tipo de Frota': v.tipo || '—',
-      'Status Atual': v.estaAtivo ? 'Em rota' : 'Parado',
-      'Último Destino': v.destino ? `${v.destino} | ${getNomeFilial(v.destino)}` : '—',
-      'Total de operações': operacoes.filter(op => op.placaCarreta === v.placa).length,
+      'Marca': v.marca,
+      'Modelo': v.modelo,
+      'Tipo': v.tipo,
+      'Filial': v.filial,
+      'Ano Modelo': v.ano,
     }))
     const wsVei = XLSX.utils.json_to_sheet(linhasVei)
-    wsVei['!cols'] = [14, 14, 12, 30, 18].map(w => ({ wch: w }))
+    wsVei['!cols'] = [12, 16, 18, 12, 10, 12].map(w => ({ wch: w }))
     XLSX.utils.book_append_sheet(wb, wsVei, 'Veículos')
 
     const data = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')
@@ -151,7 +156,7 @@ export default function Cadastros() {
   }
 
   if (secao === 'veiculos') {
-    return <SubVeiculos veiculos={listaVeiculos} onVoltar={() => setSecao(null)} />
+    return <SubVeiculos veiculos={veiculos} onVoltar={() => setSecao(null)} />
   }
 
   return (
@@ -306,9 +311,8 @@ export default function Cadastros() {
               <ChevronRight size={18} color="#cbd5e1" />
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <StatPill cor="#16a34a" label={`${veiculosSet.size} ativos`} />
-              <StatPill cor="#2563eb" label={`${veiculosAtivos.size} em rota`} />
-              <StatPill cor="#ef4444" label={`${veiculosParados.length} parados`} />
+              <StatPill cor="#2563eb" label={`${veiculos.length} cadastrados`} />
+              <StatPill cor="#ea580c" label={`${veiculosCavalo.length} cavalos`} />
             </div>
           </button>
 
@@ -463,9 +467,15 @@ function SubMotoristas({ motoristas, onVoltar }) {
 
 function SubVeiculos({ veiculos, onVoltar }) {
   const [busca, setBusca] = useState('')
-  const filtrados = veiculos.filter(v =>
-    v.placa?.toLowerCase().includes(busca.toLowerCase())
-  )
+  const [filtroFilial, setFiltroFilial] = useState('')
+  const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '')
+  const filiais = [...new Set(veiculos.map(v => v.filial).filter(Boolean))].sort()
+  const q = norm(busca.trim())
+  const filtrados = veiculos.filter(v => {
+    if (filtroFilial && v.filial !== filtroFilial) return false
+    if (!q) return true
+    return norm(v.placa).includes(q) || norm(v.modelo).includes(q) || norm(v.marca).includes(q)
+  })
 
   return (
     <div style={{ padding: '20px 16px' }}>
@@ -473,50 +483,53 @@ function SubVeiculos({ veiculos, onVoltar }) {
         ← Voltar
       </button>
       <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Veículos</h2>
-      <p style={{ fontSize: 13, color: '#94a3b8', margin: '3px 0 16px' }}>{veiculos.length} cadastrado{veiculos.length !== 1 ? 's' : ''}</p>
+      <p style={{ fontSize: 13, color: '#94a3b8', margin: '3px 0 16px' }}>{veiculos.length} cadastrado{veiculos.length !== 1 ? 's' : ''} · direto da planilha</p>
 
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        background: 'white', border: '1px solid #e2e8f0',
-        borderRadius: 10, padding: '10px 14px', marginBottom: 16
-      }}>
-        <Search size={15} color="#94a3b8" />
-        <input
-          placeholder="Buscar placa..."
-          value={busca}
-          onChange={e => setBusca(e.target.value)}
-          style={{ border: 'none', outline: 'none', fontSize: 13, color: '#334155', flex: 1, background: 'transparent' }}
-        />
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px' }}>
+          <Search size={15} color="#94a3b8" />
+          <input
+            placeholder="Buscar placa, modelo ou marca..."
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+            style={{ border: 'none', outline: 'none', fontSize: 13, color: '#334155', flex: 1, background: 'transparent' }}
+          />
+        </div>
+        <select value={filtroFilial} onChange={e => setFiltroFilial(e.target.value)}
+          style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '0 10px', fontSize: 13, color: filtroFilial ? '#334155' : '#94a3b8', background: 'white' }}>
+          <option value="">Filial</option>
+          {filiais.map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
       </div>
 
-      {filtrados.length === 0 ? (
+      {veiculos.length === 0 ? (
+        <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, marginTop: 40 }}>Não foi possível carregar a planilha de veículos.</p>
+      ) : filtrados.length === 0 ? (
         <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, marginTop: 40 }}>Nenhum veículo encontrado.</p>
       ) : (
-        filtrados.map(v => (
-          <div key={v.placa} className="card-hover" style={{
+        filtrados.map((v, i) => (
+          <div key={v.placa + i} className="card-hover" style={{
             background: 'white', borderRadius: 12, padding: '12px 16px',
             marginBottom: 8, border: '1px solid #e2e8f0',
             display: 'flex', alignItems: 'center', gap: 12
           }}>
             <div style={{
-              width: 38, height: 38, borderRadius: 10, background: v.estaAtivo ? '#fff7ed' : '#f8fafc',
+              width: 38, height: 38, borderRadius: 10, background: '#fff7ed',
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
             }}>
-              <Truck size={17} color={v.estaAtivo ? '#ea580c' : '#94a3b8'} />
+              <Truck size={17} color="#ea580c" />
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>{v.placa}</p>
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-                {v.tipo || '—'}{v.destino ? ` · ${getNomeFilial(v.destino)}` : ''}
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {[v.marca, v.modelo].filter(Boolean).join(' ')}{v.ano ? ` · ${v.ano}` : ''}{v.filial ? ` · ${v.filial}` : ''}
               </p>
             </div>
-            <span style={{
-              fontSize: 10, fontWeight: '700', padding: '3px 8px', borderRadius: 999,
-              background: v.estaAtivo ? '#fff7ed' : '#f1f5f9',
-              color: v.estaAtivo ? '#ea580c' : '#64748b'
-            }}>
-              {v.estaAtivo ? 'EM ROTA' : 'PARADO'}
-            </span>
+            {v.tipo && (
+              <span style={{ fontSize: 10, fontWeight: '700', padding: '3px 8px', borderRadius: 999, background: '#fff7ed', color: '#ea580c', flexShrink: 0 }}>
+                {v.tipo.toUpperCase()}
+              </span>
+            )}
           </div>
         ))
       )}
