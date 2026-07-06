@@ -3,8 +3,7 @@ import { supabase } from "./lib/supabase"
 import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, ExternalLink, AlertTriangle, Package } from 'lucide-react'
 import { getNomeFilial } from "./lib/filiais"
 
-// TODO: substituir pela URL real do Help Desk da Vitlog
-const HELP_DESK_URL = 'https://vitlog.com.br'
+const HELP_DESK_URL = 'https://vitlog.reportload.com/help_desk'
 
 function fmtTimer(sec) {
   if (sec < 0) sec = 0
