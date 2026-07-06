@@ -3,7 +3,7 @@ import { X, Paperclip, Search, Plus, ChevronDown, Camera } from 'lucide-react'
 import { supabase } from "./lib/supabase"
 import { uploadFotosOperacao } from "./lib/fotos"
 import { montarDetalhes } from "./lib/detalhes"
-import { FILIAIS } from "./lib/filiais"
+import { FILIAIS, FILIAIS_ROTA } from "./lib/filiais"
 import EtapasCarregamento from "./EtapasCarregamento"
 
 const CHECKLIST = [
@@ -32,7 +32,7 @@ function fmt(date) {
   return `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}/${date.getFullYear()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
 }
 
-function FilialDropdown({ value, onChange, placeholder = 'Selecione filial' }) {
+function FilialDropdown({ value, onChange, placeholder = 'Selecione filial', opcoes = FILIAIS }) {
   const [open, setOpen] = useState(false)
   const [busca, setBusca] = useState('')
   const ref = useRef(null)
@@ -46,11 +46,11 @@ function FilialDropdown({ value, onChange, placeholder = 'Selecione filial' }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const filtradas = FILIAIS.filter(f =>
+  const filtradas = opcoes.filter(f =>
     f.codigo.toLowerCase().includes(busca.toLowerCase()) ||
     f.nome.toLowerCase().includes(busca.toLowerCase())
   )
-  const sel = FILIAIS.find(f => f.codigo === value)
+  const sel = opcoes.find(f => f.codigo === value)
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
@@ -332,11 +332,11 @@ export default function CadastrarModal({ onClose, onSalvo }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
                 <div>
                   <label style={LBL}>Filial Destinatária</label>
-                  <FilialDropdown value={filialDest} onChange={setFilialDest} placeholder="Selecione filial" />
+                  <FilialDropdown value={filialDest} onChange={setFilialDest} placeholder="Selecione filial" opcoes={FILIAIS_ROTA} />
                 </div>
                 <div>
                   <label style={LBL}>Filial Remetente</label>
-                  <FilialDropdown value={filialOrig} onChange={setFilialOrig} placeholder="Filial de origem" />
+                  <FilialDropdown value={filialOrig} onChange={setFilialOrig} placeholder="Filial de origem" opcoes={FILIAIS_ROTA} />
                 </div>
               </div>
 
