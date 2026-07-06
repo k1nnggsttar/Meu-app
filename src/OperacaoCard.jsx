@@ -5,6 +5,7 @@ import { getNomeFilial } from './lib/filiais'
 import EditarOperacaoModal from './EditarOperacaoModal'
 import ConfirmModal from './ConfirmModal'
 import FinalizarModal from './FinalizarModal'
+import Confetti from './Confetti'
 
 function fmtTimer(sec) {
   if (sec < 0) sec = 0
@@ -35,6 +36,7 @@ export default function OperacaoCard({ op, onAtualizar }) {
   const [confirmAcao, setConfirmAcao] = useState(null) // null | 'pausar' | 'retomar'
   const [finalizModal, setFinalizModal] = useState(false)
   const [avisoOcioso, setAvisoOcioso] = useState(false)
+  const [festejar, setFestejar] = useState(false)
 
   const cargaPct = op.progresso || 0
   const ocioso = cargaPct < 100
@@ -98,7 +100,7 @@ export default function OperacaoCard({ op, onAtualizar }) {
       setFinalizando(false)
     } else {
       setFinalizModal(false)
-      onAtualizar()
+      setFestejar(true) // 🎉 confete; o refresh acontece quando o confete termina
     }
   }
 
@@ -240,6 +242,10 @@ export default function OperacaoCard({ op, onAtualizar }) {
           onCancel={() => setFinalizModal(false)}
           onConfirm={finalizar}
         />
+      )}
+
+      {festejar && (
+        <Confetti onDone={() => { setFestejar(false); onAtualizar() }} />
       )}
     </div>
   )
