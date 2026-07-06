@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Truck, MapPin, Pause, Play, CheckCircle, Edit2, Clock, Timer } from 'lucide-react'
+import { Truck, MapPin, Pause, Play, CheckCircle, Edit2, Clock, Timer, AlertTriangle } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { getNomeFilial } from './lib/filiais'
 import EditarOperacaoModal from './EditarOperacaoModal'
@@ -42,12 +42,14 @@ export default function OperacaoCard({ op, onAtualizar }) {
   const cargaPct = op.progresso || 0
   const ocioso = cargaPct < 100
 
-  const sswPendentes = (op.detalhes?.etapas || [])
+  const ocorrencias = (op.detalhes?.etapas || [])
     .flatMap(et => et.ocorrencias || [])
-    .filter(o => (o.codigo || o.nf || o.descricao) && !o.ssw).length
+    .filter(o => o.codigo || o.nf || o.descricao)
+  const sswPendentes = ocorrencias.filter(o => !o.ssw).length
+  const anexoPendentes = ocorrencias.filter(o => !o.anexoNome).length
 
   const pedirFinalizar = () => {
-    if (sswPendentes > 0) { setBloqueioSSW(true); return }
+    if (sswPendentes > 0 || anexoPendentes > 0) { setBloqueioSSW(true); return }
     if (ocioso) setAvisoOcioso(true)
     else setFinalizModal(true)
   }
@@ -176,6 +178,18 @@ export default function OperacaoCard({ op, onAtualizar }) {
           </p>
         )}
 
+        {(sswPendentes > 0 || anexoPendentes > 0) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '6px 10px' }}>
+            <AlertTriangle size={13} color="#d97706" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 11, fontWeight: '700', color: '#d97706' }}>
+              Pendente p/ finalizar: {[
+                sswPendentes > 0 ? `${sswPendentes} SSW` : null,
+                anexoPendentes > 0 ? `${anexoPendentes} anexo` : null,
+              ].filter(Boolean).join(' · ')}
+            </span>
+          </div>
+        )}
+
         {/* Progresso */}
         <div style={{ height: 5, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
           <div style={{ width: `${op.progresso || 0}%`, height: '100%', background: '#2563eb', borderRadius: 999, transition: 'width 0.5s' }} />
@@ -232,8 +246,11 @@ export default function OperacaoCard({ op, onAtualizar }) {
 
       {bloqueioSSW && (
         <ConfirmModal
-          titulo="SSW pendente"
-          mensagem={`Há ${sswPendentes} ocorrência(s) sem o SSW marcado. Marque o SSW de todas as ocorrências (em Editar carregamento) antes de finalizar.`}
+          titulo="Pendências antes de finalizar"
+          mensagem={`${[
+            sswPendentes > 0 ? `${sswPendentes} ocorrência(s) sem SSW marcado` : null,
+            anexoPendentes > 0 ? `${anexoPendentes} ocorrência(s) sem anexo` : null,
+          ].filter(Boolean).join(' e ')}. Resolva em Editar carregamento e salve antes de finalizar.`}
           confirmText="Entendi"
           confirmColor="#dc2626"
           onCancel={() => setBloqueioSSW(false)}

@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
-import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, Mail, AlertTriangle, Package } from 'lucide-react'
+import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, ExternalLink, AlertTriangle, Package } from 'lucide-react'
 import { getNomeFilial } from "./lib/filiais"
+
+// TODO: substituir pela URL real do Help Desk da Vitlog
+const HELP_DESK_URL = 'https://vitlog.com.br'
 
 function fmtTimer(sec) {
   if (sec < 0) sec = 0
@@ -285,7 +288,7 @@ export default function Dashboard({ setPage }) {
         )}
       </div>
 
-      {/* Quer ajuda */}
+      {/* Help Desk */}
       <div className="card-hover" style={{
         background: 'white', borderRadius: 16, padding: '16px',
         boxShadow: '0 2px 10px rgba(0,0,0,0.07)',
@@ -298,23 +301,28 @@ export default function Dashboard({ setPage }) {
             <Headphones size={20} color="#2563eb" />
           </div>
           <div>
-            <p style={{ fontSize: 14, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>Quer ajuda?</p>
+            <p style={{ fontSize: 14, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>Help Desk</p>
             <p style={{ fontSize: 12, color: '#64748b', margin: 0, lineHeight: 1.4 }}>
-              Fale com o suporte para dúvidas ou problemas com o app.
+              Precisa de suporte? Abra o Help Desk da Vitlog.
             </p>
           </div>
         </div>
-        <button style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: '#2563eb', color: 'white', border: 'none',
-          borderRadius: 999, padding: '9px 16px', fontSize: 13,
-          fontWeight: '600', cursor: 'pointer', width: '100%', justifyContent: 'center',
-        }}
+        <a
+          href={HELP_DESK_URL}
+          target="_blank"
+          rel="noreferrer"
           className="btn-hover"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: '#2563eb', color: 'white',
+            borderRadius: 999, padding: '10px 16px', fontSize: 13,
+            fontWeight: '600', cursor: 'pointer', width: '100%', justifyContent: 'center',
+            textDecoration: 'none', boxSizing: 'border-box',
+          }}
         >
-          <Mail size={14} color="white" />
-          pedrolopes@vitlog.com.br
-        </button>
+          <ExternalLink size={14} color="white" />
+          Help desk Vitlog
+        </a>
       </div>
     </div>
   )

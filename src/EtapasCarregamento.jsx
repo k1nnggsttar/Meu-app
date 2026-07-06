@@ -223,7 +223,7 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
                       <span style={{ fontSize: 11, fontWeight: '700', color: '#d97706' }} title="Marque antes de finalizar o carregamento">{sswPendentes(et)} SSW p/ finalizar</span>
                     )}
                     {anexoPendentes(et) > 0 && (
-                      <span style={{ fontSize: 11, fontWeight: '700', color: '#dc2626' }}>{anexoPendentes(et)} sem anexo</span>
+                      <span style={{ fontSize: 11, fontWeight: '700', color: '#d97706' }} title="Anexe antes de finalizar o carregamento">{anexoPendentes(et)} anexo p/ finalizar</span>
                     )}
                   </div>
                 </div>
@@ -281,15 +281,14 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
                 </button>
 
                 {(() => {
+                  // Nem SSW nem anexo bloqueiam o fechamento — só ter ao menos uma praça.
+                  // SSW e anexo são exigidos apenas ao finalizar o carregamento.
                   const semPraca = et.pracas.length === 0
-                  const anx = anexoPendentes(et)
-                  // O SSW não bloqueia mais o fechamento da etapa — só o anexo e a praça.
-                  const bloqueado = semPraca || anx > 0
                   return (
-                    <button type="button" disabled={bloqueado} onClick={() => update(et.id, { fechada: true })}
-                      style={{ width: '100%', padding: 10, border: 'none', borderRadius: 8, background: bloqueado ? '#e2e8f0' : '#16a34a', color: bloqueado ? '#94a3b8' : 'white', fontSize: 13, fontWeight: '700', cursor: bloqueado ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                      title={anx > 0 ? 'Anexe o arquivo de cada ocorrência antes de fechar a etapa' : semPraca ? 'Selecione ao menos uma praça' : ''}>
-                      <Lock size={14} /> {anx > 0 ? `Fechar etapa (${anx} anexo pendente)` : 'Fechar etapa'}
+                    <button type="button" disabled={semPraca} onClick={() => update(et.id, { fechada: true })}
+                      style={{ width: '100%', padding: 10, border: 'none', borderRadius: 8, background: semPraca ? '#e2e8f0' : '#16a34a', color: semPraca ? '#94a3b8' : 'white', fontSize: 13, fontWeight: '700', cursor: semPraca ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      title={semPraca ? 'Selecione ao menos uma praça' : ''}>
+                      <Lock size={14} /> Fechar etapa
                     </button>
                   )
                 })()}
