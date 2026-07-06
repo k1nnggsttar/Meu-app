@@ -4,6 +4,8 @@ import { supabase } from './lib/supabase'
 import { FILIAIS, FILIAIS_ROTA } from './lib/filiais'
 import { montarDetalhes } from './lib/detalhes'
 import ConfirmModal from './ConfirmModal'
+import FinalizarModal from './FinalizarModal'
+import Confetti from './Confetti'
 import EtapasCarregamento from './EtapasCarregamento'
 import ConferenteSelect from './ConferenteSelect'
 
@@ -110,7 +112,15 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   const [salvando, setSalvando] = useState(false)
   const [finalizando, setFinalizando] = useState(false)
   const [erro, setErro] = useState('')
-  const [confirmRealizar, setConfirmRealizar] = useState(false)
+  const [finalizModal, setFinalizModal] = useState(false)
+  const [avisoOcioso, setAvisoOcioso] = useState(false)
+  const [bloqueioSSW, setBloqueioSSW] = useState(false)
+  const [festejar, setFestejar] = useState(false)
+
+  const ocioso = cargaPct < 100
+  const ocorrs = (etapasData || []).flatMap(et => et.ocorrencias || []).filter(o => o.codigo || o.nf || o.descricao)
+  const sswPendentes = ocorrs.filter(o => !o.ssw).length
+  const anexoPendentes = ocorrs.filter(o => !o.anexo && !o.anexoNome).length
 
   const addPraca = () => {
     if (pracaInput && !pracas.includes(pracaInput)) { setPracas(p => [...p, pracaInput]); setPracaInput('') }
@@ -150,16 +160,28 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
     }
   }
 
-  const realizar = async () => {
+  const pedirFinalizar = () => {
+    if (sswPendentes > 0 || anexoPendentes > 0) { setBloqueioSSW(true); return }
+    if (ocioso) setAvisoOcioso(true)
+    else setFinalizModal(true)
+  }
+
+  const finalizar = async ({ frete, mercadoria }) => {
     setFinalizando(true)
-    const { error } = await supabase.from('operacoes').update({
-      status: 'concluido',
-      progresso: 100,
-      paused: false,
-      paused_at: null,
-    }).eq('id', op.id)
-    if (error) { setFinalizando(false); setErro(error.message) }
-    else { onSalvo?.(); onClose() }
+    setErro('')
+    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente })
+    const base = { status: 'concluido', progresso: 100, paused: false, paused_at: null }
+    // Tenta com tudo; cai para menos campos se alguma coluna não existir.
+    let { error } = await supabase.from('operacoes').update({ ...base, detalhes, frete, mercadoria }).eq('id', op.id)
+    if (error) ({ error } = await supabase.from('operacoes').update({ ...base, detalhes }).eq('id', op.id))
+    if (error) ({ error } = await supabase.from('operacoes').update(base).eq('id', op.id))
+    if (error) {
+      setFinalizando(false)
+      setErro(error.message || 'Erro ao finalizar.')
+    } else {
+      setFinalizModal(false)
+      setFestejar(true) // 🎉 confete; refresh/fechar quando terminar
+    }
   }
 
   return (
@@ -322,21 +344,48 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
           <button type="button" onClick={salvar} style={{ flex: 2, padding: 13, borderRadius: 8, border: 'none', fontSize: 14, fontWeight: '600', color: 'white', background: '#2563eb', cursor: salvando ? 'default' : 'pointer', opacity: salvando ? 0.7 : 1 }}>
             {salvando ? 'Salvando...' : 'Salvar'}
           </button>
-          <button type="button" onClick={() => setConfirmRealizar(true)} disabled={finalizando} style={{ flex: 2, padding: 13, borderRadius: 8, border: 'none', fontSize: 14, fontWeight: '600', color: 'white', background: '#16a34a', cursor: finalizando ? 'default' : 'pointer', opacity: finalizando ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            {finalizando ? 'Realizando...' : '✓ Realizar'}
+          <button type="button" onClick={pedirFinalizar} disabled={finalizando} style={{ flex: 2, padding: 13, borderRadius: 8, border: 'none', fontSize: 14, fontWeight: '600', color: 'white', background: '#16a34a', cursor: finalizando ? 'default' : 'pointer', opacity: finalizando ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            {finalizando ? 'Finalizando...' : '✓ Finalizar'}
           </button>
         </div>
       </div>
 
-      {confirmRealizar && (
+      {bloqueioSSW && (
         <ConfirmModal
-          titulo="Finalizar carregamento?"
-          mensagem="Essa ação marca o carregamento como concluído e não pode ser desfeita."
-          confirmText="Finalizar"
-          confirmColor="#16a34a"
-          onCancel={() => setConfirmRealizar(false)}
-          onConfirm={() => { setConfirmRealizar(false); realizar() }}
+          titulo="Pendências antes de finalizar"
+          mensagem={`${[
+            sswPendentes > 0 ? `${sswPendentes} ocorrência(s) sem SSW marcado` : null,
+            anexoPendentes > 0 ? `${anexoPendentes} ocorrência(s) sem anexo` : null,
+          ].filter(Boolean).join(' e ')}. Marque o SSW e anexe o arquivo de todas as ocorrências antes de finalizar.`}
+          confirmText="Entendi"
+          confirmColor="#dc2626"
+          onCancel={() => setBloqueioSSW(false)}
+          onConfirm={() => setBloqueioSSW(false)}
         />
+      )}
+
+      {avisoOcioso && (
+        <ConfirmModal
+          titulo="Quer finalizar o caminhão mesmo estando ocioso?"
+          mensagem={`Este caminhão está com apenas ${cargaPct}% da capacidade ocupada — ainda há espaço vazio na carreta (menos de 15 m carregados). Finalizar agora encerra o carregamento com o veículo ocioso. Deseja continuar mesmo assim?`}
+          confirmText="Sim, finalizar mesmo assim"
+          confirmColor="#f59e0b"
+          onCancel={() => setAvisoOcioso(false)}
+          onConfirm={() => { setAvisoOcioso(false); setFinalizModal(true) }}
+        />
+      )}
+
+      {finalizModal && (
+        <FinalizarModal
+          placa={op.placaCarreta}
+          salvando={finalizando}
+          onCancel={() => setFinalizModal(false)}
+          onConfirm={finalizar}
+        />
+      )}
+
+      {festejar && (
+        <Confetti onDone={() => { setFestejar(false); onSalvo?.(); onClose() }} />
       )}
     </div>
   )
