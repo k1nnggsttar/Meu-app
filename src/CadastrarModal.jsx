@@ -133,6 +133,8 @@ export default function CadastrarModal({ onClose, onSalvo }) {
   const [lacre, setLacre] = useState('')
   const [conferente, setConferente] = useState('')
   const [motorista, setMotorista] = useState(null)
+  const [placaCarreta, setPlacaCarreta] = useState('')
+  const [placaCavalo, setPlacaCavalo] = useState('')
   const [cargaPct, setCargaPct] = useState(0)
   const [etapasData, setEtapasData] = useState([])
   const [opId, setOpId] = useState(null)
@@ -171,6 +173,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
       aj3: aj3.trim() || null,
       arrumador: arrumador.trim() || null,
       motorista: motorista ? `${motorista.matricula} - ${motorista.nome}` : null,
+      placaCarreta: placaCarreta.trim() || null,
       progresso: cargaPct,
       status: 'ativo',
       paused: false,
@@ -205,7 +208,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
     if (salvandoDetalhes) return
     setErroDetalhes('')
     setSalvandoDetalhes(true)
-    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista })
+    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista, placaCavalo })
     const { error } = await supabase.from('operacoes').update({ detalhes, progresso: cargaPct }).eq('id', opId)
     setSalvandoDetalhes(false)
     if (error) {
@@ -325,8 +328,17 @@ export default function CadastrarModal({ onClose, onSalvo }) {
 
               {/* Placas */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 6 }}>
-                <div><label style={LBL}>Placa da Carreta</label><input style={DIS} readOnly placeholder="Em breve" /></div>
-                <div><label style={LBL}>Placa do Cavalo</label><input style={DIS} readOnly placeholder="Em breve" /></div>
+                {tipoVeiculo === 'terceiro' ? (
+                  <>
+                    <div><label style={LBL}>Placa da Carreta</label><input style={INP} value={placaCarreta} onChange={e => setPlacaCarreta(e.target.value.toUpperCase())} placeholder="Ex.: ABC1D23" /></div>
+                    <div><label style={LBL}>Placa do Cavalo</label><input style={INP} value={placaCavalo} onChange={e => setPlacaCavalo(e.target.value.toUpperCase())} placeholder="Ex.: ABC1D23" /></div>
+                  </>
+                ) : (
+                  <>
+                    <div><label style={LBL}>Placa da Carreta</label><input style={DIS} readOnly placeholder="Em breve" /></div>
+                    <div><label style={LBL}>Placa do Cavalo</label><input style={DIS} readOnly placeholder="Em breve" /></div>
+                  </>
+                )}
               </div>
               <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 20px', lineHeight: 1.5 }}>
                 Apenas placas de frota do ativo. Cadastro completo em breve.{' '}

@@ -110,6 +110,8 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   const [lacre, setLacre] = useState(det.lacre || '')
   const [conferente, setConferente] = useState(det.conferente || '')
   const [motorista, setMotorista] = useState(det.motorista || null)
+  const [placaCarreta, setPlacaCarreta] = useState(op.placaCarreta || '')
+  const [placaCavalo, setPlacaCavalo] = useState(det.placaCavalo || '')
 
   const [salvando, setSalvando] = useState(false)
   const [finalizando, setFinalizando] = useState(false)
@@ -124,6 +126,7 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   const sswPendentes = ocorrs.filter(o => !o.ssw).length
   const anexoPendentes = ocorrs.filter(o => !o.anexo && !o.anexoNome).length
   const motoristaExtra = motorista ? { motorista: `${motorista.matricula} - ${motorista.nome}` } : {}
+  const placaExtra = tipoFrota === 'terceiro' ? { placaCarreta: placaCarreta.trim() || null } : {}
 
   const addPraca = () => {
     if (pracaInput && !pracas.includes(pracaInput)) { setPracas(p => [...p, pracaInput]); setPracaInput('') }
@@ -133,12 +136,13 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
     if (salvando) return
     setSalvando(true)
     setErro('')
-    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista })
+    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista, placaCavalo })
     const base = {
       tipoFrota: tipoFrota === 'frota' ? 'FROTA' : 'TERCEIRO',
       destino,
       origem,
       ...motoristaExtra,
+      ...placaExtra,
       doca: doca ? parseInt(doca) : null,
       aj1: aj1.trim() || null,
       aj2: aj2.trim() || null,
@@ -173,8 +177,8 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   const finalizar = async ({ frete, mercadoria }) => {
     setFinalizando(true)
     setErro('')
-    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista })
-    const base = { status: 'concluido', progresso: 100, paused: false, paused_at: null, ...motoristaExtra }
+    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista, placaCavalo })
+    const base = { status: 'concluido', progresso: 100, paused: false, paused_at: null, ...motoristaExtra, ...placaExtra }
     // Tenta com tudo; cai para menos campos se alguma coluna não existir.
     let { error } = await supabase.from('operacoes').update({ ...base, detalhes, frete, mercadoria }).eq('id', op.id)
     if (error) ({ error } = await supabase.from('operacoes').update({ ...base, detalhes }).eq('id', op.id))
@@ -256,8 +260,17 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
 
           {/* Placas */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 6 }}>
-            <div><label style={LBL}>Placa da Carreta</label><input style={DIS} readOnly placeholder="Em breve" defaultValue={op.placaCarreta || ''} /></div>
-            <div><label style={LBL}>Placa do Cavalo</label><input style={DIS} readOnly placeholder="Em breve" /></div>
+            {tipoFrota === 'terceiro' ? (
+              <>
+                <div><label style={LBL}>Placa da Carreta</label><input style={INP} value={placaCarreta} onChange={e => setPlacaCarreta(e.target.value.toUpperCase())} placeholder="Ex.: ABC1D23" /></div>
+                <div><label style={LBL}>Placa do Cavalo</label><input style={INP} value={placaCavalo} onChange={e => setPlacaCavalo(e.target.value.toUpperCase())} placeholder="Ex.: ABC1D23" /></div>
+              </>
+            ) : (
+              <>
+                <div><label style={LBL}>Placa da Carreta</label><input style={DIS} readOnly placeholder="Em breve" defaultValue={op.placaCarreta || ''} /></div>
+                <div><label style={LBL}>Placa do Cavalo</label><input style={DIS} readOnly placeholder="Em breve" /></div>
+              </>
+            )}
           </div>
           <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 20px', lineHeight: 1.5 }}>
             Apenas placas de frota do ativo. Cadastro completo em breve.{' '}
