@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
-import { CheckCircle, MapPin, Eye } from 'lucide-react'
+import { CheckCircle, MapPin, Eye, Search } from 'lucide-react'
+import { getNomeFilial } from "./lib/filiais"
 import ConcluidoDetalhesModal from "./ConcluidoDetalhesModal"
 
 export default function Concluidos() {
   const [operacoes, setOperacoes] = useState([])
   const [verOp, setVerOp] = useState(null)
+  const [busca, setBusca] = useState('')
+  const [filtroDest, setFiltroDest] = useState('')
 
   useEffect(() => {
     carregar()
@@ -25,17 +28,53 @@ export default function Concluidos() {
     return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
   }
 
+  const destinos = [...new Set(operacoes.map(o => o.destino).filter(Boolean))].sort()
+  const q = busca.trim().toLowerCase()
+  const filtradas = operacoes.filter(op => {
+    if (filtroDest && op.destino !== filtroDest) return false
+    if (!q) return true
+    return [op.placaCarreta, op.motorista, op.destino, op.origem].some(v => (v || '').toLowerCase().includes(q))
+  })
+
   return (
     <div style={{ padding: '20px 16px' }}>
       <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Concluídos</h2>
-      <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 20px' }}>Operações finalizadas</p>
+      <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 16px' }}>Operações finalizadas</p>
+
+      {operacoes.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px' }}>
+            <Search size={15} color="#94a3b8" />
+            <input
+              placeholder="Pesquisar placa, motorista, destino..."
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              style={{ border: 'none', outline: 'none', fontSize: 13, color: '#334155', flex: 1, background: 'transparent' }}
+            />
+          </div>
+          <select
+            value={filtroDest}
+            onChange={e => setFiltroDest(e.target.value)}
+            style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13, color: filtroDest ? '#334155' : '#94a3b8', background: 'white', boxSizing: 'border-box' }}
+          >
+            <option value="">Todos os destinatários</option>
+            {destinos.map(d => (
+              <option key={d} value={d}>{d} · {getNomeFilial(d)}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {operacoes.length === 0 ? (
         <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, marginTop: 40 }}>
           Nenhuma operação concluída.
         </p>
+      ) : filtradas.length === 0 ? (
+        <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, marginTop: 40 }}>
+          Nenhum resultado para o filtro.
+        </p>
       ) : (
-        operacoes.map((op) => (
+        filtradas.map((op) => (
           <div key={op.id || op.placaCarreta} style={{
             background: 'white', borderRadius: 16,
             padding: 16, border: '1px solid #e2e8f0', marginBottom: 10
