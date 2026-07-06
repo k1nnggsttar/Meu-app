@@ -1,19 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Search, X, Check } from 'lucide-react'
+import { carregarMotoristas } from './lib/motoristas'
 
 const TH = { padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: '800', color: '#475569', letterSpacing: 0.4, background: '#f8fafc', position: 'sticky', top: 0 }
 const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '')
-
-// Cache em memória — busca só uma vez por sessão.
-let cache = null
-async function carregarMotoristas() {
-  if (cache) return cache
-  cache = fetch('/api/motoristas')
-    .then(r => r.json())
-    .then(d => d.motoristas || [])
-    .catch(() => [])
-  return cache
-}
 
 export default function MotoristaSelect({ value, onChange }) {
   const [aberto, setAberto] = useState(false)

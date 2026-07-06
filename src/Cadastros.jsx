@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Search, Users, Truck, ChevronRight, Clock, Download } from 'lucide-react'
+import { Search, Users, Truck, ChevronRight, Clock, Download, Check } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { supabase } from './lib/supabase'
 import { getNomeFilial } from './lib/filiais'
+import { carregarMotoristas, isMotoristaAtivo } from './lib/motoristas'
 
 function fmtHora(iso) {
   const d = new Date(iso)
@@ -19,6 +20,7 @@ function fmtData(iso) {
 
 export default function Cadastros() {
   const [operacoes, setOperacoes] = useState([])
+  const [motoristas, setMotoristas] = useState([])
   const [busca, setBusca] = useState('')
   const [secao, setSecao] = useState(null) // null | 'motoristas' | 'veiculos'
 
@@ -26,7 +28,10 @@ export default function Cadastros() {
     supabase.from('operacoes').select('*').order('created_at', { ascending: false }).then(({ data }) => {
       setOperacoes(data || [])
     })
+    carregarMotoristas().then(setMotoristas)
   }, [])
+
+  const motoristasAtivosPlan = motoristas.filter(isMotoristaAtivo)
 
   const hoje = new Date().toDateString()
 
@@ -112,16 +117,17 @@ export default function Cadastros() {
     wsOp['!cols'] = [16,20,16,16,16,16,14,30,30,8,12,18].map(w => ({ wch: w }))
     XLSX.utils.book_append_sheet(wb, wsOp, 'Operações')
 
-    // Aba 2: Motoristas
-    const linhasMot = listaMotoristasNomes.map(nome => ({
-      'Nome': nome.charAt(0).toUpperCase() + nome.slice(1),
-      'Status': motoristasAtivos.has(nome.toLowerCase()) ? 'Em operação' : 'Disponível',
-      'Total de operações': operacoes.filter(op =>
-        [op.motorista, op.aj1, op.aj2, op.aj3].some(n => n?.trim().toLowerCase() === nome.toLowerCase())
-      ).length,
+    // Aba 2: Motoristas (da planilha)
+    const linhasMot = motoristas.map(m => ({
+      'Matrícula': m.matricula,
+      'Nome': m.nome,
+      'Filial': m.filial,
+      'Cargo': m.cargo,
+      'Situação': m.situacao,
+      'Tipo': m.tipo,
     }))
     const wsMot = XLSX.utils.json_to_sheet(linhasMot)
-    wsMot['!cols'] = [24, 14, 20].map(w => ({ wch: w }))
+    wsMot['!cols'] = [12, 28, 10, 26, 18, 16].map(w => ({ wch: w }))
     XLSX.utils.book_append_sheet(wb, wsMot, 'Motoristas')
 
     // Aba 3: Veículos
@@ -141,7 +147,7 @@ export default function Cadastros() {
   }
 
   if (secao === 'motoristas') {
-    return <SubMotoristas motoristas={listaMotoristasNomes} ativos={motoristasAtivos} onVoltar={() => setSecao(null)} />
+    return <SubMotoristas motoristas={motoristas} onVoltar={() => setSecao(null)} />
   }
 
   if (secao === 'veiculos') {
@@ -269,9 +275,8 @@ export default function Cadastros() {
               <ChevronRight size={18} color="#cbd5e1" />
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <StatPill cor="#16a34a" label={`${motoristasAtivos.size} ativos`} />
-              <StatPill cor="#f59e0b" label={`${motoristasEmEspera.length} em espera`} />
-              {semMotorista.length > 0 && <StatPill cor="#ef4444" label={`${semMotorista.length} pendentes`} />}
+              <StatPill cor="#2563eb" label={`${motoristas.length} cadastrados`} />
+              <StatPill cor="#16a34a" label={`${motoristasAtivosPlan.length} trabalhando`} />
             </div>
           </button>
 
@@ -376,11 +381,17 @@ function StatPill({ cor, label }) {
   )
 }
 
-function SubMotoristas({ motoristas, ativos, onVoltar }) {
+function SubMotoristas({ motoristas, onVoltar }) {
   const [busca, setBusca] = useState('')
-  const filtrados = motoristas.filter(m =>
-    m.toLowerCase().includes(busca.toLowerCase())
-  )
+  const [filtroFilial, setFiltroFilial] = useState('')
+  const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '')
+  const filiais = [...new Set(motoristas.map(m => m.filial).filter(Boolean))].sort()
+  const q = norm(busca.trim())
+  const filtrados = motoristas.filter(m => {
+    if (filtroFilial && m.filial !== filtroFilial) return false
+    if (!q) return true
+    return norm(m.matricula).includes(q) || norm(m.nome).includes(q)
+  })
 
   return (
     <div style={{ padding: '20px 16px' }}>
@@ -388,29 +399,34 @@ function SubMotoristas({ motoristas, ativos, onVoltar }) {
         ← Voltar
       </button>
       <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Motoristas</h2>
-      <p style={{ fontSize: 13, color: '#94a3b8', margin: '3px 0 16px' }}>{motoristas.length} cadastrado{motoristas.length !== 1 ? 's' : ''}</p>
+      <p style={{ fontSize: 13, color: '#94a3b8', margin: '3px 0 16px' }}>{motoristas.length} cadastrado{motoristas.length !== 1 ? 's' : ''} · direto da planilha</p>
 
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        background: 'white', border: '1px solid #e2e8f0',
-        borderRadius: 10, padding: '10px 14px', marginBottom: 16
-      }}>
-        <Search size={15} color="#94a3b8" />
-        <input
-          placeholder="Buscar motorista..."
-          value={busca}
-          onChange={e => setBusca(e.target.value)}
-          style={{ border: 'none', outline: 'none', fontSize: 13, color: '#334155', flex: 1, background: 'transparent' }}
-        />
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px' }}>
+          <Search size={15} color="#94a3b8" />
+          <input
+            placeholder="Buscar matrícula ou nome..."
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+            style={{ border: 'none', outline: 'none', fontSize: 13, color: '#334155', flex: 1, background: 'transparent' }}
+          />
+        </div>
+        <select value={filtroFilial} onChange={e => setFiltroFilial(e.target.value)}
+          style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '0 10px', fontSize: 13, color: filtroFilial ? '#334155' : '#94a3b8', background: 'white' }}>
+          <option value="">Filial</option>
+          {filiais.map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
       </div>
 
-      {filtrados.length === 0 ? (
+      {motoristas.length === 0 ? (
+        <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, marginTop: 40 }}>Não foi possível carregar a planilha de motoristas.</p>
+      ) : filtrados.length === 0 ? (
         <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, marginTop: 40 }}>Nenhum motorista encontrado.</p>
       ) : (
-        filtrados.map(nome => {
-          const ativo = ativos.has(nome.toLowerCase())
+        filtrados.map(m => {
+          const ativo = isMotoristaAtivo(m)
           return (
-            <div key={nome} className="card-hover" style={{
+            <div key={m.matricula + m.nome} className="card-hover" style={{
               background: 'white', borderRadius: 12, padding: '12px 16px',
               marginBottom: 8, border: '1px solid #e2e8f0',
               display: 'flex', alignItems: 'center', gap: 12
@@ -420,18 +436,22 @@ function SubMotoristas({ motoristas, ativos, onVoltar }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 fontSize: 15, fontWeight: '700', color: ativo ? '#2563eb' : '#94a3b8'
               }}>
-                {nome[0].toUpperCase()}
+                {(m.nome || '?')[0].toUpperCase()}
               </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: '600', color: '#1e293b', margin: '0 0 2px', textTransform: 'capitalize' }}>{nome}</p>
-                <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{ativo ? 'Em operação' : 'Disponível'}</p>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: '600', color: '#1e293b', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ color: '#1d4ed8', fontWeight: '800' }}>{m.matricula}</span> · {m.nome}
+                </p>
+                <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
+                  {m.filial ? `${m.filial} · ` : ''}{m.cargo || '—'}
+                </p>
               </div>
               <span style={{
-                fontSize: 10, fontWeight: '700', padding: '3px 8px', borderRadius: 999,
+                fontSize: 10, fontWeight: '700', padding: '3px 8px', borderRadius: 999, flexShrink: 0,
                 background: ativo ? '#dcfce7' : '#f1f5f9',
                 color: ativo ? '#16a34a' : '#64748b'
               }}>
-                {ativo ? 'ATIVO' : 'LIVRE'}
+                {ativo ? 'TRABALHANDO' : (m.situacao ? m.situacao.replace(/^\d+\s*-\s*/, '').toUpperCase() : 'INATIVO')}
               </span>
             </div>
           )
