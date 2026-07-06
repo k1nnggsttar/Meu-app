@@ -1,5 +1,11 @@
 import { X } from 'lucide-react'
 
+// Considera vazio: null, string vazia ou marcadores "-" / "—" das planilhas.
+const vazio = (v) => {
+  const s = String(v ?? '').trim()
+  return s === '' || s === '-' || s === '—'
+}
+
 // Modal genérico de ficha (somente leitura).
 // props: titulo, subtitulo, badge {label, cor, bg}, icone (elemento), campos [{label, valor}], onClose
 export default function DetalheModal({ titulo, subtitulo, badge, icone, campos = [], onClose }) {
@@ -29,7 +35,7 @@ export default function DetalheModal({ titulo, subtitulo, badge, icone, campos =
 
         {/* Campos */}
         <div style={{ overflowY: 'auto', padding: '8px 20px 16px' }}>
-          {campos.filter(c => c && c.valor !== '' && c.valor != null).map((c, i) => (
+          {campos.filter(c => c && vazio(c.valor) === false).map((c, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '11px 0', borderBottom: '1px solid #f5f7fa' }}>
               <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: '600', flexShrink: 0 }}>{c.label}</span>
               <span style={{ fontSize: 13, color: '#1e293b', fontWeight: '600', textAlign: 'right' }}>{c.valor}</span>
