@@ -1,7 +1,8 @@
 import * as XLSX from 'xlsx'
 
-// Link público do Excel de veículos (placas). Sobrescreva com VEICULOS_XLSX_URL na Vercel.
-const DEFAULT_URL = 'https://vitlogcombr-my.sharepoint.com/:x:/g/personal/pedrolopes_vitlog_com_br/IQDmVJHlJ6AwRbJ7818VGa-jAZXvLtc689v4aDrHGJj2qMQ?e=cVfa7Y'
+// Links públicos dos Excels de veículos. Sobrescreva com env vars na Vercel.
+const CAVALOS_URL = 'https://vitlogcombr-my.sharepoint.com/:x:/g/personal/pedrolopes_vitlog_com_br/IQDmVJHlJ6AwRbJ7818VGa-jAZXvLtc689v4aDrHGJj2qMQ?e=cVfa7Y'
+const CARRETAS_URL = 'https://vitlogcombr-my.sharepoint.com/:x:/g/personal/pedrolopes_vitlog_com_br/IQCBH-F_MkUSRaTYOw7JCf6uAQbhj6df1R61UFfOixIORbw?e=A4vgcl'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36'
 
 async function baixarXlsx(shareUrl) {
@@ -36,33 +37,38 @@ async function baixarXlsx(shareUrl) {
 const DIACRIT = new RegExp('[\\u0300-\\u036f]', 'g')
 const norm = (s) => String(s || '').trim().toLowerCase().normalize('NFD').replace(DIACRIT, '')
 
+const pick = (row, ...nomes) => {
+  for (const key of Object.keys(row)) {
+    if (nomes.some(n => norm(key) === norm(n))) return row[key]
+  }
+  return ''
+}
+
+async function lerVeiculos(url) {
+  const buf = await baixarXlsx(url)
+  const wb = XLSX.read(buf, { type: 'buffer' })
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' })
+  return rows.map(r => ({
+    placa: String(pick(r, 'PLACA', 'Placa')).trim(),
+    modelo: String(pick(r, 'MODELO', 'Modelo')).trim(),
+    tipo: String(pick(r, 'TIPO', 'Tipo')).trim(),
+    marca: String(pick(r, 'MARCA', 'Marca')).trim(),
+    filial: String(pick(r, 'FILIAL', 'Filial')).trim(),
+    ano: String(pick(r, 'ANO MODELO', 'Ano Modelo', 'Ano')).trim(),
+    farma: String(pick(r, 'Farma')).trim(),
+    eqMedicao: String(pick(r, 'Equipamento Medição', 'Equipamento Medicao')).trim(),
+    eqResfriamento: String(pick(r, 'Equipamento Resfriamento')).trim(),
+  })).filter(v => v.placa)
+}
+
 export default async function handler(req, res) {
   try {
-    const shareUrl = process.env.VEICULOS_XLSX_URL || DEFAULT_URL
-    const buf = await baixarXlsx(shareUrl)
-    const wb = XLSX.read(buf, { type: 'buffer' })
-    const ws = wb.Sheets[wb.SheetNames[0]]
-    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' })
-
-    const pick = (row, ...nomes) => {
-      for (const key of Object.keys(row)) {
-        if (nomes.some(n => norm(key) === norm(n))) return row[key]
-      }
-      return ''
-    }
-
-    const veiculos = rows.map(r => ({
-      placa: String(pick(r, 'PLACA', 'Placa')).trim(),
-      modelo: String(pick(r, 'MODELO', 'Modelo')).trim(),
-      tipo: String(pick(r, 'TIPO', 'Tipo')).trim(),
-      marca: String(pick(r, 'MARCA', 'Marca')).trim(),
-      filial: String(pick(r, 'FILIAL', 'Filial')).trim(),
-      ano: String(pick(r, 'ANO MODELO', 'Ano Modelo', 'Ano')).trim(),
-      farma: String(pick(r, 'Farma')).trim(),
-      eqMedicao: String(pick(r, 'Equipamento Medição', 'Equipamento Medicao')).trim(),
-      eqResfriamento: String(pick(r, 'Equipamento Resfriamento')).trim(),
-    })).filter(v => v.placa)
-
+    const urls = [
+      process.env.VEICULOS_XLSX_URL || CAVALOS_URL,
+      process.env.CARRETAS_XLSX_URL || CARRETAS_URL,
+    ]
+    const resultados = await Promise.allSettled(urls.map(lerVeiculos))
+    const veiculos = resultados.flatMap(r => r.status === 'fulfilled' ? r.value : [])
     res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=600')
     res.status(200).json({ veiculos })
   } catch (e) {
