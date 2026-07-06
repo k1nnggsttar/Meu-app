@@ -8,6 +8,7 @@ import FinalizarModal from './FinalizarModal'
 import Confetti from './Confetti'
 import EtapasCarregamento from './EtapasCarregamento'
 import ConferenteSelect from './ConferenteSelect'
+import MotoristaSelect from './MotoristaSelect'
 
 const INP = {
   width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0',
@@ -108,6 +109,7 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   const [fotoTraseira, setFotoTraseira] = useState(null)
   const [lacre, setLacre] = useState(det.lacre || '')
   const [conferente, setConferente] = useState(det.conferente || '')
+  const [motorista, setMotorista] = useState(det.motorista || null)
 
   const [salvando, setSalvando] = useState(false)
   const [finalizando, setFinalizando] = useState(false)
@@ -121,6 +123,7 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   const ocorrs = (etapasData || []).flatMap(et => et.ocorrencias || []).filter(o => o.codigo || o.nf || o.descricao)
   const sswPendentes = ocorrs.filter(o => !o.ssw).length
   const anexoPendentes = ocorrs.filter(o => !o.anexo && !o.anexoNome).length
+  const motoristaExtra = motorista ? { motorista: `${motorista.matricula} - ${motorista.nome}` } : {}
 
   const addPraca = () => {
     if (pracaInput && !pracas.includes(pracaInput)) { setPracas(p => [...p, pracaInput]); setPracaInput('') }
@@ -130,11 +133,12 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
     if (salvando) return
     setSalvando(true)
     setErro('')
-    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente })
+    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista })
     const base = {
       tipoFrota: tipoFrota === 'frota' ? 'FROTA' : 'TERCEIRO',
       destino,
       origem,
+      ...motoristaExtra,
       doca: doca ? parseInt(doca) : null,
       aj1: aj1.trim() || null,
       aj2: aj2.trim() || null,
@@ -169,8 +173,8 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   const finalizar = async ({ frete, mercadoria }) => {
     setFinalizando(true)
     setErro('')
-    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente })
-    const base = { status: 'concluido', progresso: 100, paused: false, paused_at: null }
+    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista })
+    const base = { status: 'concluido', progresso: 100, paused: false, paused_at: null, ...motoristaExtra }
     // Tenta com tudo; cai para menos campos se alguma coluna não existir.
     let { error } = await supabase.from('operacoes').update({ ...base, detalhes, frete, mercadoria }).eq('id', op.id)
     if (error) ({ error } = await supabase.from('operacoes').update({ ...base, detalhes }).eq('id', op.id))
@@ -244,7 +248,10 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
           {/* Motorista */}
           <div style={{ marginBottom: 20 }}>
             <label style={LBL}>Motorista</label>
-            <input style={DIS} readOnly placeholder="Em breve" defaultValue={op.motorista || ''} />
+            <MotoristaSelect value={motorista} onChange={setMotorista} />
+            {!motorista && op.motorista && (
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>Atual: {op.motorista}</p>
+            )}
           </div>
 
           {/* Placas */}

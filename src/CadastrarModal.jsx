@@ -6,6 +6,7 @@ import { montarDetalhes } from "./lib/detalhes"
 import { FILIAIS, FILIAIS_ROTA } from "./lib/filiais"
 import EtapasCarregamento from "./EtapasCarregamento"
 import ConferenteSelect from "./ConferenteSelect"
+import MotoristaSelect from "./MotoristaSelect"
 
 const CHECKLIST = [
   { id: 'bau_furado',          label: 'Baú furado',           problemAnswer: 'sim' },
@@ -131,6 +132,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
   const [fotoTraseira, setFotoTraseira] = useState(null)
   const [lacre, setLacre] = useState('')
   const [conferente, setConferente] = useState('')
+  const [motorista, setMotorista] = useState(null)
   const [cargaPct, setCargaPct] = useState(0)
   const [etapasData, setEtapasData] = useState([])
   const [opId, setOpId] = useState(null)
@@ -168,6 +170,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
       aj2: aj2.trim() || null,
       aj3: aj3.trim() || null,
       arrumador: arrumador.trim() || null,
+      motorista: motorista ? `${motorista.matricula} - ${motorista.nome}` : null,
       progresso: cargaPct,
       status: 'ativo',
       paused: false,
@@ -202,7 +205,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
     if (salvandoDetalhes) return
     setErroDetalhes('')
     setSalvandoDetalhes(true)
-    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente })
+    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista })
     const { error } = await supabase.from('operacoes').update({ detalhes, progresso: cargaPct }).eq('id', opId)
     setSalvandoDetalhes(false)
     if (error) {
@@ -317,7 +320,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
               {/* Motorista */}
               <div style={{ marginBottom: 20 }}>
                 <label style={LBL}>Motorista</label>
-                <input style={DIS} readOnly placeholder="Em breve" />
+                <MotoristaSelect value={motorista} onChange={setMotorista} />
               </div>
 
               {/* Placas */}
