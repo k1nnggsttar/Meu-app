@@ -349,12 +349,12 @@ export default function Cadastros() {
                     }}>
                       <Truck size={15} color={op.status === 'ativo' ? '#2563eb' : '#16a34a'} />
                     </div>
-                    <div>
-                      <p style={{ fontSize: 13, fontWeight: '600', color: '#1e293b', margin: '0 0 2px' }}>
-                        {op.placaCarreta || 'Sem placa'}{op.motorista ? ` · ${op.motorista}` : ''}
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: '600', color: '#1e293b', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {op.placaCarreta || op.motorista || 'Carregamento'}
                       </p>
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-                        {op.destino ? getNomeFilial(op.destino) : '—'}
+                      <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {op.origem ? `${getNomeFilial(op.origem)} → ` : ''}{op.destino ? getNomeFilial(op.destino) : '—'}
                       </p>
                     </div>
                   </div>
