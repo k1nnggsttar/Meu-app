@@ -36,12 +36,18 @@ export default function OperacaoCard({ op, onAtualizar }) {
   const [confirmAcao, setConfirmAcao] = useState(null) // null | 'pausar' | 'retomar'
   const [finalizModal, setFinalizModal] = useState(false)
   const [avisoOcioso, setAvisoOcioso] = useState(false)
+  const [bloqueioSSW, setBloqueioSSW] = useState(false)
   const [festejar, setFestejar] = useState(false)
 
   const cargaPct = op.progresso || 0
   const ocioso = cargaPct < 100
 
+  const sswPendentes = (op.detalhes?.etapas || [])
+    .flatMap(et => et.ocorrencias || [])
+    .filter(o => (o.codigo || o.nf || o.descricao) && !o.ssw).length
+
   const pedirFinalizar = () => {
+    if (sswPendentes > 0) { setBloqueioSSW(true); return }
     if (ocioso) setAvisoOcioso(true)
     else setFinalizModal(true)
   }
@@ -221,6 +227,17 @@ export default function OperacaoCard({ op, onAtualizar }) {
             if (acao === 'pausar') pausar()
             else if (acao === 'retomar') retomar()
           }}
+        />
+      )}
+
+      {bloqueioSSW && (
+        <ConfirmModal
+          titulo="SSW pendente"
+          mensagem={`Há ${sswPendentes} ocorrência(s) sem o SSW marcado. Marque o SSW de todas as ocorrências (em Editar carregamento) antes de finalizar.`}
+          confirmText="Entendi"
+          confirmColor="#dc2626"
+          onCancel={() => setBloqueioSSW(false)}
+          onConfirm={() => setBloqueioSSW(false)}
         />
       )}
 
