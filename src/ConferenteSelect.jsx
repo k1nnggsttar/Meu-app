@@ -2,16 +2,20 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Search, X, Check } from 'lucide-react'
 import { CONFERENTES } from './lib/conferentes'
 
+const UNIDADES = [...new Set(CONFERENTES.map(c => c.unidade))].sort()
+
 const TH = { padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: '800', color: '#475569', letterSpacing: 0.4, background: '#f8fafc', position: 'sticky', top: 0 }
 
 export default function ConferenteSelect({ value, onChange, placeholder = 'Selecionar conferente' }) {
   const [aberto, setAberto] = useState(false)
   const [busca, setBusca] = useState('')
+  const [filtroUnidade, setFiltroUnidade] = useState('')
   const inputRef = useRef(null)
 
   useEffect(() => {
     if (!aberto) return
     setBusca('')
+    setFiltroUnidade('')
     const t = setTimeout(() => inputRef.current?.focus(), 50)
     const onKey = (e) => { if (e.key === 'Escape') setAberto(false) }
     document.addEventListener('keydown', onKey)
@@ -20,9 +24,11 @@ export default function ConferenteSelect({ value, onChange, placeholder = 'Selec
 
   const sel = CONFERENTES.find(c => c.codigo === value) || null
   const q = busca.trim().toLowerCase()
-  const filtrados = q
-    ? CONFERENTES.filter(c => c.codigo.includes(q) || c.apelido.toLowerCase().includes(q) || c.nome.toLowerCase().includes(q) || c.unidade.toLowerCase().includes(q))
-    : CONFERENTES
+  const filtrados = CONFERENTES.filter(c => {
+    if (filtroUnidade && c.unidade !== filtroUnidade) return false
+    if (!q) return true
+    return c.codigo.includes(q) || c.apelido.toLowerCase().includes(q) || c.nome.toLowerCase().includes(q) || c.unidade.toLowerCase().includes(q)
+  })
 
   const escolher = (codigo) => { onChange(codigo); setAberto(false) }
 
@@ -49,10 +55,10 @@ export default function ConferenteSelect({ value, onChange, placeholder = 'Selec
               </button>
             </div>
 
-            <div style={{ padding: '0 16px 10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 12px', background: '#f8fafc' }}>
+            <div style={{ padding: '0 16px 10px', display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 12px', background: '#f8fafc' }}>
                 <Search size={16} color="#94a3b8" style={{ flexShrink: 0 }} />
-                <input ref={inputRef} placeholder="Buscar por código, apelido, nome ou unidade..." value={busca} onChange={e => setBusca(e.target.value)}
+                <input ref={inputRef} placeholder="Buscar código, apelido ou nome..." value={busca} onChange={e => setBusca(e.target.value)}
                   style={{ width: '100%', border: 'none', outline: 'none', fontSize: 14, color: '#1e293b', background: 'transparent' }} />
                 {busca && (
                   <button type="button" onClick={() => setBusca('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, display: 'flex' }}>
@@ -60,6 +66,11 @@ export default function ConferenteSelect({ value, onChange, placeholder = 'Selec
                   </button>
                 )}
               </div>
+              <select value={filtroUnidade} onChange={e => setFiltroUnidade(e.target.value)}
+                style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '0 8px', fontSize: 13, color: filtroUnidade ? '#1e293b' : '#94a3b8', background: 'white', flexShrink: 0 }}>
+                <option value="">Unidade</option>
+                {UNIDADES.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
             </div>
 
             <div style={{ overflowY: 'auto', borderTop: '1px solid #f1f5f9' }}>
