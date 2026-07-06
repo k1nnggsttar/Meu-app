@@ -34,7 +34,11 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
   const remove = (id) => setEtapas(e => e.filter(et => et.id !== id))
 
   const addEtapa = () => {
-    setEtapas(e => [...e, { id: novoId(), pracas: [], metros: 0.5, volumes: '', ocorrencias: [], fechada: false }])
+    setEtapas(e => {
+      const usado = e.reduce((s, et) => s + (Number(et.metros) || 0), 0)
+      if (TRUCK_TOTAL_M - usado < 0.5) return e // caminhão cheio — não adiciona etapa
+      return [...e, { id: novoId(), pracas: [], metros: 0.5, volumes: '', ocorrencias: [], fechada: false }]
+    })
   }
 
   const togglePraca = (id, codigo) => {
@@ -300,9 +304,16 @@ export default function EtapasCarregamento({ pracasDisponiveis = [], onResumoCha
         </div>
       )}
 
-      <button type="button" onClick={addEtapa} style={{ width: '100%', padding: 10, border: '1.5px dashed #93c5fd', borderRadius: 8, background: 'transparent', color: '#2563eb', fontSize: 13, fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 20 }}>
-        <Plus size={14} /> Nova etapa
-      </button>
+      {(() => {
+        const cheio = restamM < 0.5
+        return (
+          <button type="button" onClick={addEtapa} disabled={cheio}
+            title={cheio ? 'Caminhão cheio (15 m) — sem espaço para nova etapa' : ''}
+            style={{ width: '100%', padding: 10, border: cheio ? '1.5px dashed #e2e8f0' : '1.5px dashed #93c5fd', borderRadius: 8, background: 'transparent', color: cheio ? '#cbd5e1' : '#2563eb', fontSize: 13, fontWeight: '600', cursor: cheio ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 20 }}>
+            <Plus size={14} /> {cheio ? 'Caminhão cheio (15 m)' : 'Nova etapa'}
+          </button>
+        )
+      })()}
 
       {/* Composição da carga */}
       <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>

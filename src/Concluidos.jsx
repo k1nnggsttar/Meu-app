@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
-import { CheckCircle, MapPin } from 'lucide-react'
+import { CheckCircle, MapPin, Eye } from 'lucide-react'
+import ConcluidoDetalhesModal from "./ConcluidoDetalhesModal"
 
 export default function Concluidos() {
   const [operacoes, setOperacoes] = useState([])
+  const [verOp, setVerOp] = useState(null)
 
   useEffect(() => {
     carregar()
@@ -88,9 +90,16 @@ export default function Concluidos() {
             <div style={{ height: 4, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
               <div style={{ width: '100%', height: '100%', background: '#16a34a', borderRadius: 999 }} />
             </div>
+
+            <button type="button" onClick={() => setVerOp(op)}
+              style={{ width: '100%', marginTop: 12, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', color: '#2563eb', fontSize: 13, fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Eye size={14} /> Ver detalhes
+            </button>
           </div>
         ))
       )}
+
+      {verOp && <ConcluidoDetalhesModal op={verOp} onClose={() => setVerOp(null)} />}
     </div>
   )
 }
