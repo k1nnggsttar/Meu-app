@@ -71,7 +71,7 @@ export default function Cadastros() {
   const veiculosAtivos = new Set(ativas.map(op => op.placaCarreta).filter(Boolean))
   const veiculosParados = [...veiculosSet].filter(v => !veiculosAtivos.has(v))
 
-  const totalCadastros = operacoes.length
+  const totalCadastros = motoristas.length + veiculos.length
 
   // Busca geral
   const termoBusca = busca.toLowerCase()
@@ -243,15 +243,16 @@ export default function Cadastros() {
                 {totalCadastros}
               </p>
               <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>Total de cadastros</p>
+              <p style={{ fontSize: 10, color: '#cbd5e1', margin: '2px 0 0' }}>{motoristas.length} motoristas · {veiculos.length} veículos</p>
             </div>
             <div className="card-hover" style={{
               flex: 1, background: 'white', borderRadius: 14, padding: '14px 16px',
               boxShadow: '0 2px 10px rgba(0,0,0,0.07)'
             }}>
               <p style={{ fontSize: 28, fontWeight: '800', color: '#16a34a', margin: '0 0 2px', lineHeight: 1 }}>
-                +{ativasHoje.length}
+                {motoristasAtivosPlan.length}
               </p>
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>Ativos de hoje</p>
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>Motoristas trabalhando</p>
             </div>
           </div>
 
