@@ -141,7 +141,7 @@ export default function Dashboard({ setPage }) {
         </div>
 
         {/* Card 4: Concluídos */}
-        <div className="card-hover" style={{ background: '#f0fdf4', borderRadius: 16, padding: '14px 14px 14px', boxShadow: '0 2px 10px rgba(0,0,0,0.07)' }}>
+        <div className="card-hover" onClick={() => setPage('concluidos')} style={{ background: '#f0fdf4', borderRadius: 16, padding: '14px 14px 14px', boxShadow: '0 2px 10px rgba(0,0,0,0.07)', cursor: 'pointer' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <div style={{ background: '#dcfce7', borderRadius: 8, padding: 6, display: 'flex' }}>
               <CheckCircle size={15} color="#16a34a" />
