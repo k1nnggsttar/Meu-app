@@ -149,11 +149,11 @@ export default function Dashboard({ setPage }) {
             <span style={{ fontSize: 9, fontWeight: '700', color: '#16a34a', letterSpacing: 0.5 }}>CONCLUÍDOS</span>
           </div>
           <h1 style={{ fontSize: 38, fontWeight: '800', color: '#1e293b', lineHeight: 1, margin: '0 0 3px' }}>
-            {concluidos.length}
+            {finalizadosHoje.length}
           </h1>
           <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 4px' }}>Finalizados hoje</p>
           <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-            {concluidos.length === 0 ? 'Nenhum até agora' : ''}
+            {finalizadosHoje.length === 0 ? 'Nenhum até agora' : ''}
           </p>
         </div>
       </div>
