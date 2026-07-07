@@ -2,7 +2,7 @@ import logo from './assets/logo.png'
 import Notificacoes from './Notificacoes'
 import Fotos from './Fotos'
 
-export default function Header() {
+export default function Header({ setPage }) {
   return (
     <div style={{
       position: 'fixed',
@@ -23,7 +23,7 @@ export default function Header() {
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
         <Notificacoes />
-        <Fotos />
+        <Fotos onClick={() => setPage('fotos')} />
       </div>
     </div>
   )

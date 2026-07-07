@@ -6,6 +6,7 @@ import Carregamento from "./Carregamento"
 import Pracas from "./Pracas"
 import Cadastros from "./Cadastros"
 import Concluidos from "./Concluidos"
+import FotosPage from "./FotosPage"
 import Header from "./Header"
 import BottomNav from "./BottomNav"
 
@@ -47,6 +48,7 @@ function App() {
       case 'pracas':       return <Pracas />
       case 'cadastros':    return <Cadastros />
       case 'concluidos':   return <Concluidos />
+      case 'fotos':        return <FotosPage />
       default:             return <Dashboard setPage={setPage} />
     }
   }
@@ -60,7 +62,7 @@ function App() {
       position: 'relative',
       paddingBottom: 80
     }}>
-      <Header />
+      <Header setPage={setPage} />
       <div style={{ paddingTop: 68 }}>
         {renderPage()}
       </div>
