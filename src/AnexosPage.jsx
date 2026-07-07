@@ -59,6 +59,15 @@ export default function AnexosPage() {
   const [baixarAberto, setBaixarAberto] = useState(false)
   const [pendentesCategoria, setPendentesCategoria] = useState(null)
   const [expandido, setExpandido] = useState(null)
+  const [fechando, setFechando] = useState(null)
+
+  // Anima a saída antes de desmontar o painel de botões — o próprio CSS
+  // (onAnimationEnd) avisa quando pode remover, sem mexer na posição do card.
+  const toggleExpandir = (key) => {
+    const antigo = expandido
+    if (antigo) setFechando(antigo)
+    setExpandido(antigo === key ? null : key)
+  }
 
   useEffect(() => { carregar() }, [])
   const carregar = async () => {
@@ -205,12 +214,13 @@ export default function AnexosPage() {
           const pendentes = pendentesPorCategoria[c.key] || []
           const pendCount = pendentes.filter(p => !p.resolvido).length
           const aberto = expandido === c.key
+          const mostrarPainel = aberto || fechando === c.key
           return (
             <div key={c.key} style={{
               display: 'flex', gap: 8, alignItems: 'stretch',
-              gridColumn: aberto || (i === categorias.length - 1 && categorias.length % 2 === 1) ? '1 / -1' : 'auto',
+              gridColumn: mostrarPainel || (i === categorias.length - 1 && categorias.length % 2 === 1) ? '1 / -1' : 'auto',
             }}>
-              <div className="card-hover" onClick={() => setExpandido(aberto ? null : c.key)}
+              <div className="card-hover" onClick={() => toggleExpandir(c.key)}
                 style={{
                   flex: 1, textAlign: 'left', background: catInfo.bg, borderRadius: 16, padding: 16, cursor: 'pointer',
                   border: `1px solid ${catInfo.cor}33`, boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
@@ -230,8 +240,14 @@ export default function AnexosPage() {
                 )}
               </div>
 
-              {aberto && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center', minWidth: 120 }}>
+              {mostrarPainel && (
+                <div
+                  style={{
+                    display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center', minWidth: 120,
+                    animation: `${aberto ? 'painelAcoesIn' : 'painelAcoesOut'} 0.18s ease forwards`,
+                  }}
+                  onAnimationEnd={() => { if (!aberto) setFechando(f => (f === c.key ? null : f)) }}
+                >
                   <button type="button" onClick={() => setCategoriaFiltro(categoriaFiltro === c.key ? null : c.key)}
                     style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 999, border: 'none', background: catInfo.bg, color: '#1e293b', fontSize: 13, fontWeight: '700', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
                     <ChevronRight size={14} /> Abrir
