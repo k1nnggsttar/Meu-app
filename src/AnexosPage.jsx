@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Search, Image as ImageIcon, FileText, Paperclip, Download, X, AlertTriangle, ChevronRight, Clock } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { ANEXOS_LIMPO_EVENT } from './Fotos'
 
 const CATS = {
   checklist:  { label: 'Fotos checklist', desc: 'Checklist de saída e retorno',   icon: ImageIcon, cor: '#2563eb', bg: '#eff6ff' },
@@ -132,6 +133,11 @@ export default function AnexosPage() {
     { key: 'ocorrencia', n: anexoSswTotal },
   ]
 
+  const limparBadge = () => {
+    localStorage.setItem('anexosLimpoEm', String(Date.now()))
+    window.dispatchEvent(new Event(ANEXOS_LIMPO_EVENT))
+  }
+
   const q = busca.trim().toLowerCase()
   const filtrados = anexos.filter(a => {
     if (categoriaFiltro && a.categoria !== categoriaFiltro) return false
@@ -146,12 +152,19 @@ export default function AnexosPage() {
           <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Anexos</h2>
           <p style={{ fontSize: 13, color: '#94a3b8', margin: '3px 0 0' }}>Imagens e documentos da frota</p>
         </div>
-        <button onClick={() => setBaixarAberto(true)} className="btn-hover" style={{
-          display: 'flex', alignItems: 'center', gap: 6, background: '#1e293b', color: 'white',
-          border: 'none', borderRadius: 999, padding: '9px 16px', fontSize: 13, fontWeight: '700', cursor: 'pointer', flexShrink: 0, marginTop: 2
-        }}>
-          <Download size={15} /> Baixar
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginTop: 2 }}>
+          <button type="button" onClick={limparBadge} style={{
+            background: 'none', border: 'none', color: '#2563eb', fontSize: 13, fontWeight: '600', cursor: 'pointer', padding: '9px 4px'
+          }}>
+            Limpar
+          </button>
+          <button onClick={() => setBaixarAberto(true)} className="btn-hover" style={{
+            display: 'flex', alignItems: 'center', gap: 6, background: '#1e293b', color: 'white',
+            border: 'none', borderRadius: 999, padding: '9px 16px', fontSize: 13, fontWeight: '700', cursor: 'pointer'
+          }}>
+            <Download size={15} /> Baixar
+          </button>
+        </div>
       </div>
 
       {/* Aviso */}

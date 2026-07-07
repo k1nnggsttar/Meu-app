@@ -2,18 +2,39 @@ import { useEffect, useState } from 'react'
 import { Camera } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
+const LIMPO_KEY = 'anexosLimpoEm'
+export const ANEXOS_LIMPO_EVENT = 'anexos-limpo'
+
+function contarAnexosNaoVistos(operacoes, limpoEm) {
+  let total = 0
+  for (const op of operacoes) {
+    const fotos = Array.isArray(op.fotos) ? op.fotos : []
+    for (const f of fotos) {
+      const criadoEm = typeof f === 'object' ? f.criadoEm : op.created_at
+      if (new Date(criadoEm || 0).getTime() > limpoEm) total++
+    }
+    for (const et of op.detalhes?.etapas || []) {
+      for (const o of et.ocorrencias || []) {
+        if (o.anexoUrl && new Date(o.criadaEm || op.created_at || 0).getTime() > limpoEm) total++
+      }
+    }
+  }
+  return total
+}
+
 export default function Fotos({ onClick }) {
   const [total, setTotal] = useState(0)
 
   useEffect(() => {
     const carregar = async () => {
-      const { data } = await supabase.from('operacoes').select('fotos')
-      const soma = (data || []).reduce((s, op) => s + (Array.isArray(op.fotos) ? op.fotos.length : 0), 0)
-      setTotal(soma)
+      const { data } = await supabase.from('operacoes').select('fotos, detalhes, created_at')
+      const limpoEm = Number(localStorage.getItem(LIMPO_KEY) || 0)
+      setTotal(contarAnexosNaoVistos(data || [], limpoEm))
     }
     carregar()
     const id = setInterval(carregar, 30000)
-    return () => clearInterval(id)
+    window.addEventListener(ANEXOS_LIMPO_EVENT, carregar)
+    return () => { clearInterval(id); window.removeEventListener(ANEXOS_LIMPO_EVENT, carregar) }
   }, [])
 
   return (
