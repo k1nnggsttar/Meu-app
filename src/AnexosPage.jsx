@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Image as ImageIcon, FileText, Paperclip, Download, X, AlertTriangle } from 'lucide-react'
+import { Search, Image as ImageIcon, FileText, Paperclip, Download, X, AlertTriangle, ChevronRight, Clock } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 const CATS = {
@@ -57,6 +57,7 @@ export default function AnexosPage() {
   const [categoriaFiltro, setCategoriaFiltro] = useState(null)
   const [baixarAberto, setBaixarAberto] = useState(false)
   const [pendentesCategoria, setPendentesCategoria] = useState(null)
+  const [expandido, setExpandido] = useState(null)
 
   useEffect(() => { carregar() }, [])
   const carregar = async () => {
@@ -188,34 +189,46 @@ export default function AnexosPage() {
         {categorias.map((c, i) => {
           const catInfo = CATS[c.key]
           const Icon = catInfo.icon
-          const ativo = categoriaFiltro === c.key
           const pendentes = pendentesPorCategoria[c.key] || []
           const pendCount = pendentes.filter(p => !p.resolvido).length
+          const aberto = expandido === c.key
           return (
-            <div key={c.key} className="card-hover"
-              style={{
-                textAlign: 'left', background: 'white', borderRadius: 16, padding: 16,
-                border: ativo ? `1.5px solid ${catInfo.cor}` : '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-                gridColumn: i === categorias.length - 1 && categorias.length % 2 === 1 ? '1 / -1' : 'auto',
-              }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: catInfo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon size={17} color={catInfo.cor} />
+            <div key={c.key} style={{
+              display: 'flex', gap: 8, alignItems: 'stretch',
+              gridColumn: aberto || (i === categorias.length - 1 && categorias.length % 2 === 1) ? '1 / -1' : 'auto',
+            }}>
+              <div className="card-hover" onClick={() => setExpandido(aberto ? null : c.key)}
+                style={{
+                  flex: 1, textAlign: 'left', background: catInfo.bg, borderRadius: 16, padding: 16, cursor: 'pointer',
+                  border: `1px solid ${catInfo.cor}33`, boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: catInfo.cor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon size={17} color="white" />
+                  </div>
+                  <span style={{ fontSize: 22, fontWeight: '800', color: '#1e293b' }}>{c.n}</span>
                 </div>
-                <span style={{ fontSize: 22, fontWeight: '800', color: '#1e293b' }}>{c.n}</span>
+                <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>{catInfo.label}</p>
+                <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{catInfo.desc}</p>
+                {pendCount > 0 && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: '700', color: catInfo.cor, marginTop: 8 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: 999, background: catInfo.cor }} /> {pendCount} pendente{pendCount !== 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
-              <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>{catInfo.label}</p>
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 10px' }}>{catInfo.desc}</p>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button type="button" onClick={() => setCategoriaFiltro(ativo ? null : c.key)}
-                  style={{ flex: 1, padding: '6px 0', borderRadius: 7, border: `1px solid ${catInfo.cor}`, background: ativo ? catInfo.cor : 'white', color: ativo ? 'white' : catInfo.cor, fontSize: 11, fontWeight: '700', cursor: 'pointer' }}>
-                  Abrir
-                </button>
-                <button type="button" onClick={() => setPendentesCategoria(c.key)}
-                  style={{ flex: 1, padding: '6px 0', borderRadius: 7, border: 'none', background: pendCount > 0 ? '#fef2f2' : '#f1f5f9', color: pendCount > 0 ? '#dc2626' : '#94a3b8', fontSize: 11, fontWeight: '700', cursor: 'pointer' }}>
-                  Pendentes{pendCount > 0 ? ` · ${pendCount}` : ''}
-                </button>
-              </div>
+
+              {aberto && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center', minWidth: 120 }}>
+                  <button type="button" onClick={() => setCategoriaFiltro(categoriaFiltro === c.key ? null : c.key)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 999, border: 'none', background: catInfo.bg, color: '#1e293b', fontSize: 13, fontWeight: '700', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+                    <ChevronRight size={14} /> Abrir
+                  </button>
+                  <button type="button" onClick={() => setPendentesCategoria(c.key)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 999, border: 'none', background: catInfo.bg, color: catInfo.cor, fontSize: 13, fontWeight: '700', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+                    <Clock size={14} /> Pendentes
+                  </button>
+                </div>
+              )}
             </div>
           )
         })}
