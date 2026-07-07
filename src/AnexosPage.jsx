@@ -39,11 +39,24 @@ async function baixarArquivo(url, nomeSugerido) {
   }
 }
 
+// Persiste o estado de uma pendência (resolvido/descrição) dentro de
+// detalhes.pendencias, sem mexer no resto do jsonb já salvo na operação.
+async function salvarPendencia(op, chave, patch) {
+  const detalhesAtual = op.detalhes || {}
+  const pendenciasAtual = detalhesAtual.pendencias || {}
+  const novoDetalhes = {
+    ...detalhesAtual,
+    pendencias: { ...pendenciasAtual, [chave]: { ...(pendenciasAtual[chave] || {}), ...patch } },
+  }
+  await supabase.from('operacoes').update({ detalhes: novoDetalhes }).eq('id', op.id)
+}
+
 export default function AnexosPage() {
   const [operacoes, setOperacoes] = useState([])
   const [busca, setBusca] = useState('')
   const [categoriaFiltro, setCategoriaFiltro] = useState(null)
   const [baixarAberto, setBaixarAberto] = useState(false)
+  const [pendentesCategoria, setPendentesCategoria] = useState(null)
 
   useEffect(() => { carregar() }, [])
   const carregar = async () => {
@@ -89,6 +102,28 @@ export default function AnexosPage() {
   const totalImagens = anexos.filter(isImagem).length
   // Anexos que ainda faltam: caminhões ativos sem foto da traseira + ocorrências sem anexo.
   const totalPendentes = traseiraPendentes + semAnexoSsw
+
+  // Pendências acionáveis de cada categoria — o que falta resolver, com
+  // checkbox + descrição do que foi feito, persistido em detalhes.pendencias.
+  const pendentesPorCategoria = useMemo(() => {
+    const traseira = ativas.filter(op => !temTraseira(op)).map(op => {
+      const p = op.detalhes?.pendencias?.traseira || {}
+      return { chave: 'traseira', op, titulo: op.placaCarreta || op.motorista || 'Carregamento', subtitulo: op.motorista || op.destino || '', resolvido: !!p.resolvido, descricao: p.descricao || '' }
+    })
+    const ocorrencia = []
+    for (const op of operacoes) {
+      for (const et of op.detalhes?.etapas || []) {
+        for (const o of et.ocorrencias || []) {
+          if (!o.anexoUrl && !o.anexoNome && (o.codigo || o.nf || o.descricao)) {
+            const chave = `ocorrencia:${o.id}`
+            const p = op.detalhes?.pendencias?.[chave] || {}
+            ocorrencia.push({ chave, op, titulo: [o.codigo, o.descricao].filter(Boolean).join(' - ') || 'Ocorrência', subtitulo: op.placaCarreta || op.motorista || '', resolvido: !!p.resolvido, descricao: p.descricao || '' })
+          }
+        }
+      }
+    }
+    return { checklist: [], traseira, ocorrencia }
+  }, [operacoes, ativas])
 
   const categorias = [
     { key: 'checklist', n: contagemChecklist },
@@ -154,12 +189,12 @@ export default function AnexosPage() {
           const catInfo = CATS[c.key]
           const Icon = catInfo.icon
           const ativo = categoriaFiltro === c.key
+          const pendentes = pendentesPorCategoria[c.key] || []
+          const pendCount = pendentes.filter(p => !p.resolvido).length
           return (
-            <button key={c.key} type="button"
-              onClick={() => setCategoriaFiltro(ativo ? null : c.key)}
-              className="card-hover"
+            <div key={c.key} className="card-hover"
               style={{
-                textAlign: 'left', background: 'white', borderRadius: 16, padding: 16, cursor: 'pointer',
+                textAlign: 'left', background: 'white', borderRadius: 16, padding: 16,
                 border: ativo ? `1.5px solid ${catInfo.cor}` : '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
                 gridColumn: i === categorias.length - 1 && categorias.length % 2 === 1 ? '1 / -1' : 'auto',
               }}>
@@ -170,8 +205,18 @@ export default function AnexosPage() {
                 <span style={{ fontSize: 22, fontWeight: '800', color: '#1e293b' }}>{c.n}</span>
               </div>
               <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>{catInfo.label}</p>
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{catInfo.desc}</p>
-            </button>
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 10px' }}>{catInfo.desc}</p>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button type="button" onClick={() => setCategoriaFiltro(ativo ? null : c.key)}
+                  style={{ flex: 1, padding: '6px 0', borderRadius: 7, border: `1px solid ${catInfo.cor}`, background: ativo ? catInfo.cor : 'white', color: ativo ? 'white' : catInfo.cor, fontSize: 11, fontWeight: '700', cursor: 'pointer' }}>
+                  Abrir
+                </button>
+                <button type="button" onClick={() => setPendentesCategoria(c.key)}
+                  style={{ flex: 1, padding: '6px 0', borderRadius: 7, border: 'none', background: pendCount > 0 ? '#fef2f2' : '#f1f5f9', color: pendCount > 0 ? '#dc2626' : '#94a3b8', fontSize: 11, fontWeight: '700', cursor: 'pointer' }}>
+                  Pendentes{pendCount > 0 ? ` · ${pendCount}` : ''}
+                </button>
+              </div>
+            </div>
           )
         })}
       </div>
@@ -215,6 +260,71 @@ export default function AnexosPage() {
       {baixarAberto && (
         <BaixarAnexoModal anexos={anexos} onClose={() => setBaixarAberto(false)} />
       )}
+
+      {pendentesCategoria && (
+        <PendentesModal
+          categoria={pendentesCategoria}
+          itens={pendentesPorCategoria[pendentesCategoria] || []}
+          onClose={() => setPendentesCategoria(null)}
+          onSalvar={async (item, patch) => { await salvarPendencia(item.op, item.chave, patch); carregar() }}
+        />
+      )}
+    </div>
+  )
+}
+
+function PendentesModal({ categoria, itens, onClose, onSalvar }) {
+  const catInfo = CATS[categoria]
+
+  return (
+    <div onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ background: 'white', borderRadius: 14, width: '100%', maxWidth: 480, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
+          <div>
+            <span style={{ fontSize: 16, fontWeight: '700', color: '#1e293b' }}>Pendências — {catInfo.label}</span>
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>Marque como resolvido e descreva o que foi feito.</p>
+          </div>
+          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', flexShrink: 0 }}><X size={20} /></button>
+        </div>
+
+        <div style={{ overflowY: 'auto', padding: '12px 16px' }}>
+          {itens.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '24px 12px', margin: 0 }}>Nenhuma pendência nessa categoria.</p>
+          ) : itens.map(item => (
+            <PendenciaItem key={item.chave} item={item} onSalvar={onSalvar} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PendenciaItem({ item, onSalvar }) {
+  const [resolvido, setResolvido] = useState(item.resolvido)
+  const [descricao, setDescricao] = useState(item.descricao)
+
+  const toggleResolvido = () => {
+    const novo = !resolvido
+    setResolvido(novo)
+    onSalvar(item, { resolvido: novo, descricao })
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 8px', borderBottom: '1px solid #f1f5f9' }}>
+      <input type="checkbox" checked={resolvido} onChange={toggleResolvido}
+        style={{ width: 18, height: 18, marginTop: 2, accentColor: '#16a34a', cursor: 'pointer', flexShrink: 0 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 13, fontWeight: '700', color: resolvido ? '#94a3b8' : '#1e293b', margin: 0, textDecoration: resolvido ? 'line-through' : 'none' }}>{item.titulo}</p>
+        {item.subtitulo && <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 6px' }}>{item.subtitulo}</p>}
+        <textarea
+          placeholder="O que foi feito para resolver essa pendência..."
+          value={descricao}
+          onChange={e => setDescricao(e.target.value)}
+          onBlur={() => onSalvar(item, { resolvido, descricao })}
+          style={{ width: '100%', minHeight: 50, padding: '7px 9px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+        />
+      </div>
     </div>
   )
 }
