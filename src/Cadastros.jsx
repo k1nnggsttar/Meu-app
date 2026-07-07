@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Search, Users, Truck, ChevronRight, Clock, Download, Check } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import { Search, Users, Truck, ChevronRight, Clock } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { getNomeFilial } from './lib/filiais'
 import { carregarMotoristas, isMotoristaAtivo } from './lib/motoristas'
@@ -10,6 +9,11 @@ import DetalheModal from './DetalheModal'
 function fmtHora(iso) {
   const d = new Date(iso)
   return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+}
+
+const DIACRIT = new RegExp('[\\u0300-\\u036f]', 'g')
+function norm(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(DIACRIT, '')
 }
 
 function fmtData(iso) {
@@ -26,6 +30,7 @@ export default function Cadastros() {
   const [veiculos, setVeiculos] = useState([])
   const [busca, setBusca] = useState('')
   const [secao, setSecao] = useState(null) // null | 'motoristas' | 'veiculos'
+  const [selBusca, setSelBusca] = useState(null) // { tipo: 'motorista'|'veiculo', dado }
 
   useEffect(() => {
     supabase.from('operacoes').select('*').order('created_at', { ascending: false }).then(({ data }) => {
@@ -38,119 +43,27 @@ export default function Cadastros() {
   const motoristasAtivosPlan = motoristas.filter(isMotoristaAtivo)
   const veiculosCavalo = veiculos.filter(v => String(v.tipo).toUpperCase().includes('CAVALO'))
 
-  const hoje = new Date().toDateString()
-
-  const ativas = operacoes.filter(op => op.status === 'ativo')
-  const concluidasHoje = operacoes.filter(op =>
-    op.status === 'concluido' && new Date(op.created_at).toDateString() === hoje
-  )
-  const ativasHoje = operacoes.filter(op => new Date(op.created_at).toDateString() === hoje)
-
-  // Motoristas únicos
-  const motoristasSet = new Set()
-  operacoes.forEach(op => {
-    if (op.motorista) motoristasSet.add(op.motorista.trim().toLowerCase())
-    if (op.aj1) motoristasSet.add(op.aj1.trim().toLowerCase())
-    if (op.aj2) motoristasSet.add(op.aj2.trim().toLowerCase())
-    if (op.aj3) motoristasSet.add(op.aj3.trim().toLowerCase())
-  })
-
-  const motoristasAtivos = new Set()
-  ativas.forEach(op => {
-    if (op.motorista) motoristasAtivos.add(op.motorista.trim().toLowerCase())
-    if (op.aj1) motoristasAtivos.add(op.aj1.trim().toLowerCase())
-    if (op.aj2) motoristasAtivos.add(op.aj2.trim().toLowerCase())
-    if (op.aj3) motoristasAtivos.add(op.aj3.trim().toLowerCase())
-  })
-
-  const motoristasEmEspera = [...motoristasSet].filter(m => !motoristasAtivos.has(m))
-  const semMotorista = ativas.filter(op => !op.motorista)
-
-  // Veículos únicos
-  const veiculosSet = new Set(operacoes.map(op => op.placaCarreta).filter(Boolean))
-  const veiculosAtivos = new Set(ativas.map(op => op.placaCarreta).filter(Boolean))
-  const veiculosParados = [...veiculosSet].filter(v => !veiculosAtivos.has(v))
-
   const totalCadastros = motoristas.length + veiculos.length
 
-  // Busca geral
-  const termoBusca = busca.toLowerCase()
-  const resultadosBusca = termoBusca
-    ? operacoes.filter(op =>
-        op.motorista?.toLowerCase().includes(termoBusca) ||
-        op.aj1?.toLowerCase().includes(termoBusca) ||
-        op.aj2?.toLowerCase().includes(termoBusca) ||
-        op.aj3?.toLowerCase().includes(termoBusca) ||
-        op.placaCarreta?.toLowerCase().includes(termoBusca) ||
-        op.destino?.toLowerCase().includes(termoBusca)
-      )
+  // Busca geral — motoristas, veículos e operações
+  const q = norm(busca.trim())
+  const resultadosMotoristas = q
+    ? motoristas.filter(m => norm(m.matricula).includes(q) || norm(m.nome).includes(q)).slice(0, 5)
     : []
-
-  // Lista de motoristas para sub-tela
-  const listaMotoristasNomes = [...new Set(
-    operacoes.flatMap(op =>
-      [op.motorista, op.aj1, op.aj2, op.aj3].filter(Boolean).map(n => n.trim())
-    )
-  )].sort()
-
-  // Lista de veículos para sub-tela
-  const listaVeiculos = [...veiculosSet].sort().map(placa => {
-    const ultimaOp = operacoes.find(op => op.placaCarreta === placa)
-    const estaAtivo = veiculosAtivos.has(placa)
-    return { placa, estaAtivo, destino: ultimaOp?.destino, tipo: ultimaOp?.tipoFrota }
-  })
-
-  const exportarExcel = () => {
-    const wb = XLSX.utils.book_new()
-
-    // Aba 1: Operações
-    const linhasOp = operacoes.map(op => ({
-      'Placa da Carreta': op.placaCarreta || '—',
-      'Motorista': op.motorista || '—',
-      'Ajudante 1': op.aj1 || '—',
-      'Ajudante 2': op.aj2 || '—',
-      'Ajudante 3': op.aj3 || '—',
-      'Arrumador': op.arrumador || '—',
-      'Tipo de Frota': op.tipoFrota || '—',
-      'Filial Destino': op.destino ? `${op.destino} | ${getNomeFilial(op.destino)}` : '—',
-      'Filial Origem': op.origem ? `${op.origem} | ${getNomeFilial(op.origem)}` : '—',
-      'Doca': op.doca || '—',
-      'Status': op.status === 'ativo' ? 'Ativo' : 'Concluído',
-      'Data/Hora': op.created_at ? new Date(op.created_at).toLocaleString('pt-BR') : '—',
-    }))
-    const wsOp = XLSX.utils.json_to_sheet(linhasOp)
-    wsOp['!cols'] = [16,20,16,16,16,16,14,30,30,8,12,18].map(w => ({ wch: w }))
-    XLSX.utils.book_append_sheet(wb, wsOp, 'Operações')
-
-    // Aba 2: Motoristas (da planilha)
-    const linhasMot = motoristas.map(m => ({
-      'Matrícula': m.matricula,
-      'Nome': m.nome,
-      'Filial': m.filial,
-      'Cargo': m.cargo,
-      'Situação': m.situacao,
-      'Tipo': m.tipo,
-    }))
-    const wsMot = XLSX.utils.json_to_sheet(linhasMot)
-    wsMot['!cols'] = [12, 28, 10, 26, 18, 16].map(w => ({ wch: w }))
-    XLSX.utils.book_append_sheet(wb, wsMot, 'Motoristas')
-
-    // Aba 3: Veículos (da planilha)
-    const linhasVei = veiculos.map(v => ({
-      'Placa': v.placa,
-      'Marca': v.marca,
-      'Modelo': v.modelo,
-      'Tipo': v.tipo,
-      'Filial': v.filial,
-      'Ano Modelo': v.ano,
-    }))
-    const wsVei = XLSX.utils.json_to_sheet(linhasVei)
-    wsVei['!cols'] = [12, 16, 18, 12, 10, 12].map(w => ({ wch: w }))
-    XLSX.utils.book_append_sheet(wb, wsVei, 'Veículos')
-
-    const data = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')
-    XLSX.writeFile(wb, `Cadastros_Frota_${data}.xlsx`)
-  }
+  const resultadosVeiculos = q
+    ? veiculos.filter(v => norm(v.placa).includes(q) || norm(v.modelo).includes(q) || norm(v.marca).includes(q)).slice(0, 5)
+    : []
+  const resultadosBusca = q
+    ? operacoes.filter(op =>
+        norm(op.motorista).includes(q) ||
+        norm(op.aj1).includes(q) ||
+        norm(op.aj2).includes(q) ||
+        norm(op.aj3).includes(q) ||
+        norm(op.placaCarreta).includes(q) ||
+        norm(op.destino).includes(q)
+      ).slice(0, 5)
+    : []
+  const temResultados = resultadosMotoristas.length > 0 || resultadosVeiculos.length > 0 || resultadosBusca.length > 0
 
   if (secao === 'motoristas') {
     return <SubMotoristas motoristas={motoristas} onVoltar={() => setSecao(null)} />
@@ -162,26 +75,8 @@ export default function Cadastros() {
 
   return (
     <div style={{ padding: '20px 16px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Cadastro</h2>
-          <p style={{ fontSize: 13, color: '#94a3b8', margin: '3px 0 0' }}>Gerencie os cadastros da frota</p>
-        </div>
-        <button
-          onClick={exportarExcel}
-          className="btn-hover"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: '#16a34a', color: 'white', border: 'none',
-            borderRadius: 10, padding: '8px 14px', fontSize: 12,
-            fontWeight: '700', cursor: 'pointer', flexShrink: 0, marginTop: 2
-          }}
-        >
-          <Download size={14} color="white" />
-          Excel
-        </button>
-      </div>
-      <div style={{ marginBottom: 16 }} />
+      <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Cadastro</h2>
+      <p style={{ fontSize: 13, color: '#94a3b8', margin: '3px 0 16px' }}>Gerencie os cadastros da frota</p>
 
       {/* Busca */}
       <div style={{
@@ -201,34 +96,128 @@ export default function Cadastros() {
       {/* Resultados da busca */}
       {busca && (
         <div style={{ marginBottom: 16 }}>
-          {resultadosBusca.length === 0 ? (
+          {!temResultados ? (
             <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '20px 0' }}>Nenhum resultado encontrado.</p>
           ) : (
-            resultadosBusca.slice(0, 5).map(op => (
-              <div key={op.id} className="card-hover" style={{
-                background: 'white', borderRadius: 12, padding: '12px 14px',
-                marginBottom: 8, border: '1px solid #e2e8f0',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-              }}>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>
-                    {op.placaCarreta || '—'} {op.motorista ? `· ${op.motorista}` : ''}
-                  </p>
-                  <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-                    {op.destino ? getNomeFilial(op.destino) : '—'} · {fmtData(op.created_at)}
-                  </p>
-                </div>
-                <span style={{
-                  fontSize: 10, fontWeight: '700', padding: '3px 8px', borderRadius: 999,
-                  background: op.status === 'ativo' ? '#dcfce7' : '#f1f5f9',
-                  color: op.status === 'ativo' ? '#16a34a' : '#64748b'
-                }}>
-                  {op.status === 'ativo' ? 'ATIVO' : 'CONCLUÍDO'}
-                </span>
-              </div>
-            ))
+            <>
+              {resultadosMotoristas.length > 0 && (
+                <>
+                  <p style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8', letterSpacing: 0.4, margin: '0 0 8px' }}>MOTORISTAS</p>
+                  {resultadosMotoristas.map(m => {
+                    const ativo = isMotoristaAtivo(m)
+                    return (
+                      <div key={m.matricula + m.nome} className="card-hover" onClick={() => setSelBusca({ tipo: 'motorista', dado: m })} style={{
+                        background: 'white', borderRadius: 12, padding: '12px 14px',
+                        marginBottom: 8, border: '1px solid #e2e8f0', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                      }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>
+                            <span style={{ color: '#1d4ed8' }}>{m.matricula}</span> · {m.nome}
+                          </p>
+                          <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{m.filial}{m.cargo ? ` · ${m.cargo}` : ''}</p>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: '700', padding: '3px 8px', borderRadius: 999, flexShrink: 0, background: ativo ? '#dcfce7' : '#f1f5f9', color: ativo ? '#16a34a' : '#64748b' }}>
+                          {ativo ? 'TRABALHANDO' : 'INATIVO'}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </>
+              )}
+
+              {resultadosVeiculos.length > 0 && (
+                <>
+                  <p style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8', letterSpacing: 0.4, margin: '12px 0 8px' }}>VEÍCULOS</p>
+                  {resultadosVeiculos.map((v, i) => (
+                    <div key={v.placa + i} className="card-hover" onClick={() => setSelBusca({ tipo: 'veiculo', dado: v })} style={{
+                      background: 'white', borderRadius: 12, padding: '12px 14px',
+                      marginBottom: 8, border: '1px solid #e2e8f0', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                    }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>{v.placa}</p>
+                        <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{[v.marca, v.modelo].filter(Boolean).join(' ')}{v.filial ? ` · ${v.filial}` : ''}</p>
+                      </div>
+                      {v.tipo && <span style={{ fontSize: 10, fontWeight: '700', padding: '3px 8px', borderRadius: 999, background: '#fff7ed', color: '#ea580c', flexShrink: 0 }}>{v.tipo.toUpperCase()}</span>}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {resultadosBusca.length > 0 && (
+                <>
+                  <p style={{ fontSize: 11, fontWeight: '700', color: '#94a3b8', letterSpacing: 0.4, margin: '12px 0 8px' }}>CARREGAMENTOS</p>
+                  {resultadosBusca.map(op => (
+                    <div key={op.id} className="card-hover" style={{
+                      background: 'white', borderRadius: 12, padding: '12px 14px',
+                      marginBottom: 8, border: '1px solid #e2e8f0',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                    }}>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>
+                          {op.placaCarreta || '—'} {op.motorista ? `· ${op.motorista}` : ''}
+                        </p>
+                        <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
+                          {op.destino ? getNomeFilial(op.destino) : '—'} · {fmtData(op.created_at)}
+                        </p>
+                      </div>
+                      <span style={{
+                        fontSize: 10, fontWeight: '700', padding: '3px 8px', borderRadius: 999,
+                        background: op.status === 'ativo' ? '#dcfce7' : '#f1f5f9',
+                        color: op.status === 'ativo' ? '#16a34a' : '#64748b'
+                      }}>
+                        {op.status === 'ativo' ? 'ATIVO' : 'CONCLUÍDO'}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </>
           )}
         </div>
+      )}
+
+      {selBusca?.tipo === 'motorista' && (
+        <DetalheModal
+          titulo={selBusca.dado.nome}
+          subtitulo={`Matrícula ${selBusca.dado.matricula}`}
+          badge={isMotoristaAtivo(selBusca.dado)
+            ? { label: 'TRABALHANDO', cor: '#16a34a', bg: '#dcfce7' }
+            : { label: (selBusca.dado.situacao || 'INATIVO').replace(/^\d+\s*-\s*/, '').toUpperCase(), cor: '#64748b', bg: '#f1f5f9' }}
+          icone={<Users size={22} color="#2563eb" />}
+          campos={[
+            { label: 'Matrícula', valor: selBusca.dado.matricula },
+            { label: 'Cargo', valor: selBusca.dado.cargo },
+            { label: 'Situação', valor: selBusca.dado.situacao },
+            { label: 'Filial', valor: selBusca.dado.filial },
+            { label: 'Tipo', valor: selBusca.dado.tipo },
+            { label: 'Admissão', valor: selBusca.dado.admissao },
+            { label: 'Data de treinamento', valor: selBusca.dado.dataTreinamento },
+            { label: 'Manual do motorista', valor: selBusca.dado.manual },
+          ]}
+          onClose={() => setSelBusca(null)}
+        />
+      )}
+
+      {selBusca?.tipo === 'veiculo' && (
+        <DetalheModal
+          titulo={selBusca.dado.placa}
+          subtitulo={[selBusca.dado.marca, selBusca.dado.modelo].filter(Boolean).join(' ')}
+          badge={selBusca.dado.tipo ? { label: selBusca.dado.tipo.toUpperCase(), cor: '#ea580c', bg: '#fff7ed' } : null}
+          icone={<Truck size={22} color="#ea580c" />}
+          campos={[
+            { label: 'Marca', valor: selBusca.dado.marca },
+            { label: 'Modelo', valor: selBusca.dado.modelo },
+            { label: 'Tipo', valor: selBusca.dado.tipo },
+            { label: 'Ano modelo', valor: selBusca.dado.ano },
+            { label: 'Filial', valor: selBusca.dado.filial },
+            { label: 'Farma', valor: selBusca.dado.farma },
+            { label: 'Equip. medição', valor: selBusca.dado.eqMedicao },
+            { label: 'Equip. resfriamento', valor: selBusca.dado.eqResfriamento },
+          ]}
+          onClose={() => setSelBusca(null)}
+        />
       )}
 
       {!busca && (
@@ -323,12 +312,9 @@ export default function Cadastros() {
             background: 'white', borderRadius: 16, padding: '16px',
             boxShadow: '0 2px 10px rgba(0,0,0,0.07)'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Clock size={14} color="#64748b" />
-                <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: 0 }}>Atividade recente</p>
-              </div>
-              <span style={{ fontSize: 12, color: '#2563eb', fontWeight: '600', cursor: 'pointer' }}>Ver tudo</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <Clock size={14} color="#64748b" />
+              <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: 0 }}>Atividade recente</p>
             </div>
 
             {operacoes.length === 0 ? (
