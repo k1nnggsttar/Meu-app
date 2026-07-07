@@ -7,6 +7,7 @@ import { FILIAIS, FILIAIS_ROTA } from "./lib/filiais"
 import EtapasCarregamento from "./EtapasCarregamento"
 import ConferenteSelect from "./ConferenteSelect"
 import MotoristaSelect from "./MotoristaSelect"
+import PlacaSelect from "./PlacaSelect"
 
 const CHECKLIST = [
   { id: 'bau_furado',          label: 'Baú furado',           problemAnswer: 'sim' },
@@ -335,8 +336,8 @@ export default function CadastrarModal({ onClose, onSalvo }) {
                   </>
                 ) : (
                   <>
-                    <div><label style={LBL}>Placa da Carreta</label><input style={DIS} readOnly placeholder="Em breve" /></div>
-                    <div><label style={LBL}>Placa do Cavalo</label><input style={DIS} readOnly placeholder="Em breve" /></div>
+                    <div><label style={LBL}>Placa da Carreta</label><PlacaSelect value={placaCarreta} onChange={setPlacaCarreta} tipos={['CARRETA']} placeholder="Selecionar carreta" /></div>
+                    <div><label style={LBL}>Placa do Cavalo</label><PlacaSelect value={placaCavalo} onChange={setPlacaCavalo} tipos={['CAVALO', '¾']} placeholder="Selecionar cavalo" /></div>
                   </>
                 )}
               </div>

@@ -9,6 +9,7 @@ import Confetti from './Confetti'
 import EtapasCarregamento from './EtapasCarregamento'
 import ConferenteSelect from './ConferenteSelect'
 import MotoristaSelect from './MotoristaSelect'
+import PlacaSelect from './PlacaSelect'
 
 const INP = {
   width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0',
@@ -267,8 +268,8 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
               </>
             ) : (
               <>
-                <div><label style={LBL}>Placa da Carreta</label><input style={DIS} readOnly placeholder="Em breve" defaultValue={op.placaCarreta || ''} /></div>
-                <div><label style={LBL}>Placa do Cavalo</label><input style={DIS} readOnly placeholder="Em breve" /></div>
+                <div><label style={LBL}>Placa da Carreta</label><PlacaSelect value={placaCarreta} onChange={setPlacaCarreta} tipos={['CARRETA']} placeholder="Selecionar carreta" /></div>
+                <div><label style={LBL}>Placa do Cavalo</label><PlacaSelect value={placaCavalo} onChange={setPlacaCavalo} tipos={['CAVALO', '¾']} placeholder="Selecionar cavalo" /></div>
               </>
             )}
           </div>
