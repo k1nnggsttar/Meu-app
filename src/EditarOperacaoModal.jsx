@@ -3,6 +3,7 @@ import { X, ChevronDown, Plus, Camera, Search } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { FILIAIS, FILIAIS_ROTA } from './lib/filiais'
 import { montarDetalhes } from './lib/detalhes'
+import { uploadAnexos, enviarAnexosOcorrencias } from './lib/fotos'
 import ConfirmModal from './ConfirmModal'
 import FinalizarModal from './FinalizarModal'
 import Confetti from './Confetti'
@@ -133,11 +134,33 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
     if (pracaInput && !pracas.includes(pracaInput)) { setPracas(p => [...p, pracaInput]); setPracaInput('') }
   }
 
+  // Sobe a foto da traseira e os anexos de ocorrência ainda pendentes (File em
+  // memória) e devolve as etapas atualizadas (com anexoUrl) + o array `fotos`
+  // completo (o que já existia na operação + o que acabou de subir).
+  const enviarAnexosPendentes = async () => {
+    let etapasFinal = etapasData
+    const novos = []
+    try {
+      const { etapas: etapasComUrl, novosAnexos } = await enviarAnexosOcorrencias(op.id, etapasData)
+      etapasFinal = etapasComUrl
+      novos.push(...novosAnexos)
+      if (fotoTraseira) {
+        const traseira = await uploadAnexos(op.id, [{ file: fotoTraseira, categoria: 'traseira', nome: 'Foto da traseira' }])
+        novos.push(...traseira)
+      }
+    } catch (e) {
+      console.warn('Anexos (traseira/ocorrências) não foram salvos:', e?.message)
+    }
+    const existentes = Array.isArray(op.fotos) ? op.fotos : []
+    return { etapasFinal, fotosFinal: [...existentes, ...novos] }
+  }
+
   const salvar = async () => {
     if (salvando) return
     setSalvando(true)
     setErro('')
-    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista, placaCavalo })
+    const { etapasFinal, fotosFinal } = await enviarAnexosPendentes()
+    const detalhes = montarDetalhes({ pracas, etapas: etapasFinal, assEncarregado, assConferente, lacre, conferente, motorista, placaCavalo })
     const base = {
       tipoFrota: tipoFrota === 'frota' ? 'FROTA' : 'TERCEIRO',
       destino,
@@ -150,9 +173,9 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
       aj3: aj3.trim() || null,
       arrumador: arrumador.trim() || null,
     }
-    let { error } = await supabase.from('operacoes').update({ ...base, detalhes, progresso: cargaPct }).eq('id', op.id)
+    let { error } = await supabase.from('operacoes').update({ ...base, detalhes, progresso: cargaPct, fotos: fotosFinal }).eq('id', op.id)
     if (error) {
-      // A coluna "detalhes" pode não existir ainda — salva ao menos os campos básicos.
+      // A coluna "detalhes" (ou "fotos") pode não existir ainda — salva ao menos os campos básicos.
       ;({ error } = await supabase.from('operacoes').update(base).eq('id', op.id))
       if (!error) {
         setSalvando(false)
@@ -178,10 +201,12 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   const finalizar = async ({ frete, mercadoria }) => {
     setFinalizando(true)
     setErro('')
-    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista, placaCavalo })
+    const { etapasFinal, fotosFinal } = await enviarAnexosPendentes()
+    const detalhes = montarDetalhes({ pracas, etapas: etapasFinal, assEncarregado, assConferente, lacre, conferente, motorista, placaCavalo })
     const base = { status: 'concluido', progresso: 100, paused: false, paused_at: null, ...motoristaExtra, ...placaExtra }
     // Tenta com tudo; cai para menos campos se alguma coluna não existir.
-    let { error } = await supabase.from('operacoes').update({ ...base, detalhes, frete, mercadoria }).eq('id', op.id)
+    let { error } = await supabase.from('operacoes').update({ ...base, detalhes, frete, mercadoria, fotos: fotosFinal }).eq('id', op.id)
+    if (error) ({ error } = await supabase.from('operacoes').update({ ...base, detalhes, fotos: fotosFinal }).eq('id', op.id))
     if (error) ({ error } = await supabase.from('operacoes').update({ ...base, detalhes }).eq('id', op.id))
     if (error) ({ error } = await supabase.from('operacoes').update(base).eq('id', op.id))
     if (error) {

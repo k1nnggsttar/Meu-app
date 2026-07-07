@@ -6,7 +6,7 @@ import Carregamento from "./Carregamento"
 import Pracas from "./Pracas"
 import Cadastros from "./Cadastros"
 import Concluidos from "./Concluidos"
-import FotosPage from "./FotosPage"
+import AnexosPage from "./AnexosPage"
 import Header from "./Header"
 import BottomNav from "./BottomNav"
 
@@ -48,7 +48,7 @@ function App() {
       case 'pracas':       return <Pracas />
       case 'cadastros':    return <Cadastros />
       case 'concluidos':   return <Concluidos />
-      case 'fotos':        return <FotosPage />
+      case 'fotos':        return <AnexosPage />
       default:             return <Dashboard setPage={setPage} />
     }
   }

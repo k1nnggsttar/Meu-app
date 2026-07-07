@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react"
 import { X, Paperclip, Search, Plus, ChevronDown, Camera } from 'lucide-react'
 import { supabase } from "./lib/supabase"
-import { uploadFotosOperacao } from "./lib/fotos"
+import { uploadAnexos, enviarAnexosOcorrencias } from "./lib/fotos"
 import { montarDetalhes } from "./lib/detalhes"
 import { FILIAIS, FILIAIS_ROTA } from "./lib/filiais"
 import EtapasCarregamento from "./EtapasCarregamento"
@@ -139,6 +139,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
   const [cargaPct, setCargaPct] = useState(0)
   const [etapasData, setEtapasData] = useState([])
   const [opId, setOpId] = useState(null)
+  const [anexosChecklist, setAnexosChecklist] = useState([])
   const [salvandoDetalhes, setSalvandoDetalhes] = useState(false)
   const [erroDetalhes, setErroDetalhes] = useState('')
 
@@ -189,15 +190,19 @@ export default function CadastrarModal({ onClose, onSalvo }) {
 
     setOpId(nova?.id || null)
 
-    // Envia as fotos do checklist + traseira ao Storage (não bloqueia o cadastro se falhar).
+    // Envia as fotos do checklist (obrigatórias nos itens com problema) ao Storage.
     try {
-      const arquivos = [...Object.values(fotos), fotoTraseira].filter(Boolean)
-      if (nova?.id && arquivos.length) {
-        const urls = await uploadFotosOperacao(nova.id, arquivos)
-        if (urls.length) await supabase.from('operacoes').update({ fotos: urls }).eq('id', nova.id)
+      const itens = Object.entries(fotos).map(([id, file]) => {
+        const item = CHECKLIST.find(c => c.id === id)
+        return { file, categoria: 'checklist', nome: item?.label || id }
+      })
+      if (nova?.id && itens.length) {
+        const enviados = await uploadAnexos(nova.id, itens)
+        setAnexosChecklist(enviados)
+        if (enviados.length) await supabase.from('operacoes').update({ fotos: enviados }).eq('id', nova.id)
       }
     } catch (e) {
-      console.warn('Fotos não foram salvas:', e?.message)
+      console.warn('Fotos do checklist não foram salvas:', e?.message)
     }
 
     setSalvando(false)
@@ -209,8 +214,26 @@ export default function CadastrarModal({ onClose, onSalvo }) {
     if (salvandoDetalhes) return
     setErroDetalhes('')
     setSalvandoDetalhes(true)
-    const detalhes = montarDetalhes({ pracas, etapas: etapasData, assEncarregado, assConferente, lacre, conferente, motorista, placaCavalo })
-    const { error } = await supabase.from('operacoes').update({ detalhes, progresso: cargaPct }).eq('id', opId)
+
+    // Sobe a foto da traseira e os anexos de ocorrência pendentes, e junta tudo
+    // num único array `fotos` (checklist já enviado na etapa anterior).
+    let etapasFinal = etapasData
+    let anexosNovos = []
+    try {
+      const { etapas: etapasComUrl, novosAnexos } = await enviarAnexosOcorrencias(opId, etapasData)
+      etapasFinal = etapasComUrl
+      anexosNovos = novosAnexos
+      if (fotoTraseira) {
+        const traseira = await uploadAnexos(opId, [{ file: fotoTraseira, categoria: 'traseira', nome: 'Foto da traseira' }])
+        anexosNovos = [...anexosNovos, ...traseira]
+      }
+    } catch (e) {
+      console.warn('Anexos (traseira/ocorrências) não foram salvos:', e?.message)
+    }
+
+    const detalhes = montarDetalhes({ pracas, etapas: etapasFinal, assEncarregado, assConferente, lacre, conferente, motorista, placaCavalo })
+    const fotosFinal = [...anexosChecklist, ...anexosNovos]
+    const { error } = await supabase.from('operacoes').update({ detalhes, progresso: cargaPct, fotos: fotosFinal }).eq('id', opId)
     setSalvandoDetalhes(false)
     if (error) {
       console.error('Erro ao salvar detalhes:', error.message)
