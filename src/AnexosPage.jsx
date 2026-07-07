@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Image as ImageIcon, FileText, Paperclip, Download, X } from 'lucide-react'
+import { Search, Image as ImageIcon, FileText, Paperclip, Download, X, AlertTriangle } from 'lucide-react'
 import { supabase } from './lib/supabase'
 
 const CATS = {
@@ -116,6 +116,14 @@ export default function AnexosPage() {
         }}>
           <Download size={15} /> Baixar
         </button>
+      </div>
+
+      {/* Aviso */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', margin: '16px 0' }}>
+        <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0, marginTop: 1 }} />
+        <p style={{ fontSize: 12, color: '#92400e', margin: 0, lineHeight: 1.4 }}>
+          Essas imagens servem para conscientização de que há algo fora do lugar — resolva as pendências assim que possível.
+        </p>
       </div>
 
       {/* Busca */}
