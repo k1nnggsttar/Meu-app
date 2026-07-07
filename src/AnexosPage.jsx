@@ -215,49 +215,72 @@ export default function AnexosPage() {
           const pendCount = pendentes.filter(p => !p.resolvido).length
           const aberto = expandido === c.key
           const mostrarPainel = aberto || fechando === c.key
-          return (
-            <div key={c.key} style={{
-              display: 'flex', gap: 8, alignItems: 'stretch',
-              gridColumn: mostrarPainel || (i === categorias.length - 1 && categorias.length % 2 === 1) ? '1 / -1' : 'auto',
-            }}>
-              <div className="card-hover" onClick={() => toggleExpandir(c.key)}
-                style={{
-                  flex: 1, textAlign: 'left', background: catInfo.bg, borderRadius: 16, padding: 16, cursor: 'pointer',
-                  border: `1px solid ${catInfo.cor}33`, boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-                }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: catInfo.cor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={17} color="white" />
-                  </div>
-                  <span style={{ fontSize: 22, fontWeight: '800', color: '#1e293b' }}>{c.n}</span>
-                </div>
-                <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>{catInfo.label}</p>
-                <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{catInfo.desc}</p>
-                {pendCount > 0 && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: '700', color: catInfo.cor, marginTop: 8 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: 999, background: catInfo.cor }} /> {pendCount} pendente{pendCount !== 1 ? 's' : ''}
-                  </span>
-                )}
-              </div>
+          // Última categoria "sobrando" numa linha ímpar: fica sozinha na
+          // própria linha, então pode encolher pra abrir espaço sem empurrar
+          // ninguém. As demais (em par numa linha) nunca mudam de posição —
+          // o painel flutua por cima da vizinha em vez de deslocar o grid.
+          const standalone = i === categorias.length - 1 && categorias.length % 2 === 1
+          const colunaDireita = !standalone && i % 2 === 1
 
-              {mostrarPainel && (
-                <div
-                  style={{
-                    display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center', minWidth: 120,
-                    animation: `${aberto ? 'painelAcoesIn' : 'painelAcoesOut'} 0.18s ease forwards`,
-                  }}
-                  onAnimationEnd={() => { if (!aberto) setFechando(f => (f === c.key ? null : f)) }}
-                >
-                  <button type="button" onClick={() => setCategoriaFiltro(categoriaFiltro === c.key ? null : c.key)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 999, border: 'none', background: catInfo.bg, color: '#1e293b', fontSize: 13, fontWeight: '700', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-                    <ChevronRight size={14} /> Abrir
-                  </button>
-                  <button type="button" onClick={() => setPendentesCategoria(c.key)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 999, border: 'none', background: catInfo.bg, color: catInfo.cor, fontSize: 13, fontWeight: '700', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-                    <Clock size={14} /> Pendentes
-                  </button>
+          const cardEl = (
+            <div className="card-hover" onClick={() => toggleExpandir(c.key)}
+              style={{
+                flex: standalone ? 1 : undefined, width: standalone ? undefined : '100%',
+                textAlign: 'left', background: catInfo.bg, borderRadius: 16, padding: 16, cursor: 'pointer',
+                border: `1px solid ${catInfo.cor}33`, boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+              }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: catInfo.cor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon size={17} color="white" />
                 </div>
+                <span style={{ fontSize: 22, fontWeight: '800', color: '#1e293b' }}>{c.n}</span>
+              </div>
+              <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>{catInfo.label}</p>
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{catInfo.desc}</p>
+              {pendCount > 0 && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: '700', color: catInfo.cor, marginTop: 8 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: catInfo.cor }} /> {pendCount} pendente{pendCount !== 1 ? 's' : ''}
+                </span>
               )}
+            </div>
+          )
+
+          const painelEl = mostrarPainel && (
+            <div
+              style={{
+                display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center', minWidth: 120, zIndex: 30,
+                ...(standalone ? {} : {
+                  position: 'absolute', top: 8, bottom: 8, padding: 8, borderRadius: 16,
+                  background: 'white', boxShadow: '0 8px 24px rgba(0,0,0,0.14)',
+                  ...(colunaDireita ? { right: 'calc(100% + 8px)' } : { left: 'calc(100% + 8px)' }),
+                }),
+                animation: `${aberto ? 'painelAcoesIn' : 'painelAcoesOut'} 0.18s ease forwards`,
+              }}
+              onAnimationEnd={() => { if (!aberto) setFechando(f => (f === c.key ? null : f)) }}
+            >
+              <button type="button" onClick={() => setCategoriaFiltro(categoriaFiltro === c.key ? null : c.key)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 999, border: 'none', background: catInfo.bg, color: '#1e293b', fontSize: 13, fontWeight: '700', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+                <ChevronRight size={14} /> Abrir
+              </button>
+              <button type="button" onClick={() => setPendentesCategoria(c.key)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 999, border: 'none', background: catInfo.bg, color: catInfo.cor, fontSize: 13, fontWeight: '700', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+                <Clock size={14} /> Pendentes
+              </button>
+            </div>
+          )
+
+          if (standalone) {
+            return (
+              <div key={c.key} style={{ display: 'flex', gap: 8, alignItems: 'stretch', gridColumn: '1 / -1' }}>
+                {cardEl}
+                {painelEl}
+              </div>
+            )
+          }
+          return (
+            <div key={c.key} style={{ position: 'relative' }}>
+              {cardEl}
+              {painelEl}
             </div>
           )
         })}
