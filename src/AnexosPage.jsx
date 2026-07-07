@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Image as ImageIcon, FileText, Paperclip, Plus, X } from 'lucide-react'
+import { Search, Image as ImageIcon, FileText, Paperclip, Download, X } from 'lucide-react'
 import { supabase } from './lib/supabase'
-import { uploadAnexos } from './lib/fotos'
 
 const CATS = {
-  checklist:  { label: 'Fotos checklist', desc: 'Checklist de saída e retorno',        icon: ImageIcon, cor: '#2563eb', bg: '#eff6ff' },
-  traseira:   { label: 'Fotos traseira',  desc: 'Registro da traseira do veículo',      icon: ImageIcon, cor: '#ea580c', bg: '#fff7ed' },
-  ocorrencia: { label: 'Anexo SSW',       desc: 'Comprovantes anexados às ocorrências', icon: Paperclip, cor: '#7c3aed', bg: '#f5f3ff' },
-  documento:  { label: 'Documentos',      desc: 'Arquivos gerais da frota',             icon: FileText,  cor: '#334155', bg: '#f1f5f9' },
+  checklist:  { label: 'Fotos checklist', desc: 'Checklist de saída e retorno',   icon: ImageIcon, cor: '#2563eb', bg: '#eff6ff' },
+  traseira:   { label: 'Fotos traseira',  desc: 'Registro da traseira do veículo', icon: ImageIcon, cor: '#ea580c', bg: '#fff7ed' },
+  ocorrencia: { label: 'Anexo SSW',       desc: 'Anexos das ocorrências (SSW)',   icon: Paperclip, cor: '#7c3aed', bg: '#f5f3ff' },
+  documento:  { label: 'Documentos',      desc: 'Arquivos gerais da frota',       icon: FileText,  cor: '#334155', bg: '#f1f5f9' },
 }
 
 function isImagem(item) {
@@ -21,11 +20,30 @@ function fmtData(iso) {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+// Baixa de fato o arquivo (em vez de só abrir em nova aba). Cai para
+// window.open se o fetch falhar (ex.: CORS bloqueando o bucket).
+async function baixarArquivo(url, nomeSugerido) {
+  try {
+    const resp = await fetch(url)
+    const blob = await resp.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = nomeSugerido || 'arquivo'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(blobUrl)
+  } catch {
+    window.open(url, '_blank')
+  }
+}
+
 export default function AnexosPage() {
   const [operacoes, setOperacoes] = useState([])
   const [busca, setBusca] = useState('')
   const [categoriaFiltro, setCategoriaFiltro] = useState(null)
-  const [enviarAberto, setEnviarAberto] = useState(false)
+  const [baixarAberto, setBaixarAberto] = useState(false)
 
   useEffect(() => { carregar() }, [])
   const carregar = async () => {
@@ -61,21 +79,23 @@ export default function AnexosPage() {
   const ativas = operacoes.filter(op => op.status === 'ativo')
   const temTraseira = (op) => (Array.isArray(op.fotos) ? op.fotos : []).some(f => typeof f === 'object' && f.categoria === 'traseira')
 
-  const contagem = {
-    checklist: anexos.filter(a => a.categoria === 'checklist').length,
-    traseira: anexos.filter(a => a.categoria === 'traseira').length,
-    ocorrencia: todasOcorrencias.length,
-    documento: anexos.filter(a => a.categoria === 'documento').length,
-  }
+  const contagemChecklist = anexos.filter(a => a.categoria === 'checklist').length
+  const contagemTraseira = anexos.filter(a => a.categoria === 'traseira').length
   const avariasChecklist = anexos.filter(a => a.categoria === 'checklist' && ['Baú furado', 'Borracha danificada', 'Porta danificada'].includes(a.nome)).length
   const traseiraPendentes = ativas.filter(op => !temTraseira(op)).length
-  const ocorrenciasAbertas = todasOcorrencias.filter(o => !o.ssw).length
   const anexoSswTotal = anexos.filter(a => a.categoria === 'ocorrencia').length
   const semAnexoSsw = todasOcorrencias.filter(o => !o.anexoUrl && !o.anexoNome).length
+  const ocorrenciasAbertas = todasOcorrencias.filter(o => !o.ssw).length
 
   const totalArquivos = anexos.length
   const totalImagens = anexos.filter(isImagem).length
   const totalPendentes = ocorrenciasAbertas
+
+  const categorias = [
+    { key: 'checklist', n: contagemChecklist, sub: `${avariasChecklist} avaria${avariasChecklist !== 1 ? 's' : ''}`, subCor: '#dc2626' },
+    { key: 'traseira', n: contagemTraseira, sub: `${traseiraPendentes} pendente${traseiraPendentes !== 1 ? 's' : ''}`, subCor: traseiraPendentes > 0 ? '#d97706' : '#16a34a' },
+    { key: 'ocorrencia', n: anexoSswTotal, sub: `${semAnexoSsw} sem anexo`, subCor: semAnexoSsw > 0 ? '#dc2626' : '#16a34a' },
+  ]
 
   const q = busca.trim().toLowerCase()
   const filtrados = anexos.filter(a => {
@@ -91,11 +111,11 @@ export default function AnexosPage() {
           <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Anexos</h2>
           <p style={{ fontSize: 13, color: '#94a3b8', margin: '3px 0 0' }}>Imagens e documentos da frota</p>
         </div>
-        <button onClick={() => setEnviarAberto(true)} className="btn-hover" style={{
+        <button onClick={() => setBaixarAberto(true)} className="btn-hover" style={{
           display: 'flex', alignItems: 'center', gap: 6, background: '#1e293b', color: 'white',
           border: 'none', borderRadius: 999, padding: '9px 16px', fontSize: 13, fontWeight: '700', cursor: 'pointer', flexShrink: 0, marginTop: 2
         }}>
-          <Plus size={15} /> Enviar
+          <Download size={15} /> Baixar
         </button>
       </div>
 
@@ -123,22 +143,18 @@ export default function AnexosPage() {
       {/* Categorias */}
       <p style={{ fontSize: 15, fontWeight: '700', color: '#1e293b', margin: '0 0 10px' }}>Categorias</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-        {[
-          { key: 'checklist', n: contagem.checklist, sub: `${avariasChecklist} avaria${avariasChecklist !== 1 ? 's' : ''}`, subCor: '#dc2626' },
-          { key: 'traseira', n: contagem.traseira, sub: `${traseiraPendentes} pendente${traseiraPendentes !== 1 ? 's' : ''}`, subCor: traseiraPendentes > 0 ? '#d97706' : '#16a34a' },
-          { key: 'ocorrencia', n: contagem.ocorrencia, sub: `${ocorrenciasAbertas} aberta${ocorrenciasAbertas !== 1 ? 's' : ''}`, subCor: ocorrenciasAbertas > 0 ? '#16a34a' : '#94a3b8', overrideLabel: 'Ocorrências', overrideDesc: 'Sinistros e irregularidades', overrideIcon: 'alert' },
-          { key: 'ocorrenciaAnexo', n: anexoSswTotal, sub: `${semAnexoSsw} sem anexo`, subCor: semAnexoSsw > 0 ? '#dc2626' : '#16a34a', overrideKey: 'ocorrencia' },
-        ].map(c => {
-          const catInfo = CATS[c.overrideKey || c.key] || CATS.documento
-          const Icon = c.overrideIcon === 'alert' ? Paperclip : catInfo.icon
-          const ativo = categoriaFiltro === (c.overrideKey || c.key)
+        {categorias.map((c, i) => {
+          const catInfo = CATS[c.key]
+          const Icon = catInfo.icon
+          const ativo = categoriaFiltro === c.key
           return (
             <button key={c.key} type="button"
-              onClick={() => setCategoriaFiltro(ativo ? null : (c.overrideKey || c.key))}
+              onClick={() => setCategoriaFiltro(ativo ? null : c.key)}
               className="card-hover"
               style={{
                 textAlign: 'left', background: 'white', borderRadius: 16, padding: 16, cursor: 'pointer',
-                border: ativo ? `1.5px solid ${catInfo.cor}` : '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
+                border: ativo ? `1.5px solid ${catInfo.cor}` : '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                gridColumn: i === categorias.length - 1 && categorias.length % 2 === 1 ? '1 / -1' : 'auto',
               }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: catInfo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -146,8 +162,8 @@ export default function AnexosPage() {
                 </div>
                 <span style={{ fontSize: 22, fontWeight: '800', color: '#1e293b' }}>{c.n}</span>
               </div>
-              <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>{c.overrideLabel || catInfo.label}</p>
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 8px' }}>{c.overrideDesc || catInfo.desc}</p>
+              <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>{catInfo.label}</p>
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 8px' }}>{catInfo.desc}</p>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: '700', color: c.subCor }}>
                 <span style={{ width: 6, height: 6, borderRadius: 999, background: c.subCor }} /> {c.sub}
               </span>
@@ -192,95 +208,68 @@ export default function AnexosPage() {
         </div>
       )}
 
-      {enviarAberto && (
-        <EnviarAnexoModal
-          operacoes={operacoes}
-          onClose={() => setEnviarAberto(false)}
-          onEnviado={() => { setEnviarAberto(false); carregar() }}
-        />
+      {baixarAberto && (
+        <BaixarAnexoModal anexos={anexos} onClose={() => setBaixarAberto(false)} />
       )}
     </div>
   )
 }
 
-function EnviarAnexoModal({ operacoes, onClose, onEnviado }) {
+function BaixarAnexoModal({ anexos, onClose }) {
   const [busca, setBusca] = useState('')
-  const [opSel, setOpSel] = useState(null)
-  const [arquivo, setArquivo] = useState(null)
-  const [enviando, setEnviando] = useState(false)
-  const [erro, setErro] = useState('')
+  const [baixandoUrl, setBaixandoUrl] = useState(null)
 
   const q = busca.trim().toLowerCase()
-  const resultados = q
-    ? operacoes.filter(op => (op.placaCarreta || '').toLowerCase().includes(q) || (op.motorista || '').toLowerCase().includes(q)).slice(0, 6)
-    : operacoes.slice(0, 6)
+  const resultados = (q
+    ? anexos.filter(a => [a.nome, a.op?.placaCarreta, a.op?.motorista].some(v => (v || '').toLowerCase().includes(q)))
+    : anexos
+  ).slice(0, 30)
 
-  const enviar = async () => {
-    if (!opSel || !arquivo || enviando) return
-    setEnviando(true)
-    setErro('')
-    try {
-      const enviados = await uploadAnexos(opSel.id, [{ file: arquivo, categoria: 'documento', nome: arquivo.name }])
-      if (!enviados.length) throw new Error('Falha ao enviar o arquivo.')
-      const existentes = Array.isArray(opSel.fotos) ? opSel.fotos : []
-      const { error } = await supabase.from('operacoes').update({ fotos: [...existentes, ...enviados] }).eq('id', opSel.id)
-      if (error) throw error
-      onEnviado()
-    } catch (e) {
-      setErro(e.message || 'Não foi possível enviar o arquivo.')
-    } finally {
-      setEnviando(false)
-    }
+  const handleBaixar = async (a) => {
+    setBaixandoUrl(a.url)
+    await baixarArquivo(a.url, a.nome)
+    setBaixandoUrl(null)
   }
 
   return (
     <div onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ background: 'white', borderRadius: 14, width: '100%', maxWidth: 420, boxShadow: '0 25px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+      <div style={{ background: 'white', borderRadius: 14, width: '100%', maxWidth: 460, maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
-          <span style={{ fontSize: 16, fontWeight: '700', color: '#1e293b' }}>Enviar anexo</span>
+          <span style={{ fontSize: 16, fontWeight: '700', color: '#1e293b' }}>Baixar anexo</span>
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex' }}><X size={20} /></button>
         </div>
 
-        <div style={{ padding: '16px 20px' }}>
-          <label style={{ display: 'block', fontSize: 11, fontWeight: '600', color: '#64748b', marginBottom: 6 }}>Carregamento</label>
-          {opSel ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #e2e8f0', borderRadius: 8, padding: '9px 12px', marginBottom: 16 }}>
-              <span style={{ fontSize: 13, color: '#1e293b', fontWeight: '600' }}>{opSel.placaCarreta || opSel.motorista || 'Carregamento'}</span>
-              <button type="button" onClick={() => setOpSel(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 12 }}>Trocar</button>
-            </div>
-          ) : (
-            <>
-              <input placeholder="Buscar placa ou motorista..." value={busca} onChange={e => setBusca(e.target.value)}
-                style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, marginBottom: 8, boxSizing: 'border-box' }} />
-              <div style={{ border: '1px solid #f1f5f9', borderRadius: 8, maxHeight: 180, overflowY: 'auto', marginBottom: 16 }}>
-                {resultados.length === 0 ? (
-                  <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 12, padding: 12, margin: 0 }}>Nenhum carregamento encontrado</p>
-                ) : resultados.map(op => (
-                  <button key={op.id} type="button" onClick={() => setOpSel(op)}
-                    style={{ width: '100%', textAlign: 'left', padding: '9px 12px', border: 'none', borderBottom: '1px solid #f8fafc', background: 'white', cursor: 'pointer', fontSize: 13 }}>
-                    <strong style={{ color: '#1e293b' }}>{op.placaCarreta || '—'}</strong>{op.motorista ? ` · ${op.motorista}` : ''}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          <label style={{ display: 'block', fontSize: 11, fontWeight: '600', color: '#64748b', marginBottom: 6 }}>Arquivo</label>
-          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12, border: '1.5px dashed #93c5fd', borderRadius: 8, background: '#eff6ff', cursor: 'pointer', fontSize: 13, color: arquivo ? '#16a34a' : '#2563eb', fontWeight: '600' }}>
-            {arquivo ? `✓ ${arquivo.name}` : 'Selecionar arquivo'}
-            <input type="file" style={{ display: 'none' }} onChange={e => setArquivo(e.target.files?.[0] || null)} />
-          </label>
-
-          {erro && <p style={{ fontSize: 12, color: '#dc2626', margin: '10px 0 0' }}>{erro}</p>}
+        <div style={{ padding: '14px 20px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1px solid #e2e8f0', borderRadius: 8, padding: '9px 12px', background: '#f8fafc' }}>
+            <Search size={15} color="#94a3b8" />
+            <input autoFocus placeholder="Buscar arquivo, placa ou motorista..." value={busca} onChange={e => setBusca(e.target.value)}
+              style={{ width: '100%', border: 'none', outline: 'none', fontSize: 13, color: '#1e293b', background: 'transparent' }} />
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
-          <button type="button" onClick={onClose} style={{ flex: 1, padding: 11, borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', fontSize: 13, fontWeight: '600', color: '#334155', cursor: 'pointer' }}>Cancelar</button>
-          <button type="button" onClick={enviar} disabled={!opSel || !arquivo || enviando}
-            style={{ flex: 1, padding: 11, borderRadius: 8, border: 'none', background: (!opSel || !arquivo || enviando) ? '#93c5fd' : '#1e293b', fontSize: 13, fontWeight: '700', color: 'white', cursor: (!opSel || !arquivo || enviando) ? 'default' : 'pointer' }}>
-            {enviando ? 'Enviando...' : 'Enviar'}
-          </button>
+        <div style={{ overflowY: 'auto', padding: '10px 8px' }}>
+          {resultados.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '24px 12px', margin: 0 }}>Nenhum anexo encontrado.</p>
+          ) : resultados.map((a, i) => {
+            const catInfo = CATS[a.categoria] || CATS.documento
+            const Icon = catInfo.icon
+            return (
+              <div key={a.url + i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 8 }} className="row-hover">
+                <div style={{ width: 34, height: 34, borderRadius: 8, background: catInfo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                  {isImagem(a) ? <img src={a.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Icon size={16} color={catInfo.cor} />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: '600', color: '#1e293b', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.nome}</p>
+                  <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{a.op?.placaCarreta || a.op?.motorista || '—'} · {catInfo.label}</p>
+                </div>
+                <button type="button" onClick={() => handleBaixar(a)} disabled={baixandoUrl === a.url}
+                  style={{ flexShrink: 0, background: '#eff6ff', border: 'none', borderRadius: 999, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: baixandoUrl === a.url ? 'default' : 'pointer' }}>
+                  <Download size={14} color="#2563eb" />
+                </button>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
