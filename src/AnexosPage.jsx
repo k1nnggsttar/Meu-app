@@ -81,20 +81,19 @@ export default function AnexosPage() {
 
   const contagemChecklist = anexos.filter(a => a.categoria === 'checklist').length
   const contagemTraseira = anexos.filter(a => a.categoria === 'traseira').length
-  const avariasChecklist = anexos.filter(a => a.categoria === 'checklist' && ['Baú furado', 'Borracha danificada', 'Porta danificada'].includes(a.nome)).length
   const traseiraPendentes = ativas.filter(op => !temTraseira(op)).length
   const anexoSswTotal = anexos.filter(a => a.categoria === 'ocorrencia').length
   const semAnexoSsw = todasOcorrencias.filter(o => !o.anexoUrl && !o.anexoNome).length
-  const ocorrenciasAbertas = todasOcorrencias.filter(o => !o.ssw).length
 
   const totalArquivos = anexos.length
   const totalImagens = anexos.filter(isImagem).length
-  const totalPendentes = ocorrenciasAbertas
+  // Anexos que ainda faltam: caminhões ativos sem foto da traseira + ocorrências sem anexo.
+  const totalPendentes = traseiraPendentes + semAnexoSsw
 
   const categorias = [
-    { key: 'checklist', n: contagemChecklist, sub: `${avariasChecklist} avaria${avariasChecklist !== 1 ? 's' : ''}`, subCor: '#dc2626' },
-    { key: 'traseira', n: contagemTraseira, sub: `${traseiraPendentes} pendente${traseiraPendentes !== 1 ? 's' : ''}`, subCor: traseiraPendentes > 0 ? '#d97706' : '#16a34a' },
-    { key: 'ocorrencia', n: anexoSswTotal, sub: `${semAnexoSsw} sem anexo`, subCor: semAnexoSsw > 0 ? '#dc2626' : '#16a34a' },
+    { key: 'checklist', n: contagemChecklist },
+    { key: 'traseira', n: contagemTraseira },
+    { key: 'ocorrencia', n: anexoSswTotal },
   ]
 
   const q = busca.trim().toLowerCase()
@@ -163,10 +162,7 @@ export default function AnexosPage() {
                 <span style={{ fontSize: 22, fontWeight: '800', color: '#1e293b' }}>{c.n}</span>
               </div>
               <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: '0 0 2px' }}>{catInfo.label}</p>
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 8px' }}>{catInfo.desc}</p>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: '700', color: c.subCor }}>
-                <span style={{ width: 6, height: 6, borderRadius: 999, background: c.subCor }} /> {c.sub}
-              </span>
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{catInfo.desc}</p>
             </button>
           )
         })}
