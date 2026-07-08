@@ -130,8 +130,14 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
   const motoristaExtra = motorista ? { motorista: `${motorista.matricula} - ${motorista.nome}` } : {}
   const placaExtra = tipoFrota === 'terceiro' ? { placaCarreta: placaCarreta.trim() || null } : {}
 
-  const addPraca = () => {
-    if (pracaInput && !pracas.includes(pracaInput)) { setPracas(p => [...p, pracaInput]); setPracaInput('') }
+  const etapasRef = useRef(null)
+
+  const addPraca = (codigo) => {
+    if (codigo && !pracas.includes(codigo)) {
+      setPracas(p => [...p, codigo])
+      setPracaInput('')
+      setTimeout(() => etapasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
+    }
   }
 
   // Sobe a foto da traseira e os anexos de ocorrência ainda pendentes (File em
@@ -324,13 +330,8 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
           {/* Praças carregadas */}
           <div style={{ marginBottom: 20 }}>
             <p style={SEC}>Praças carregadas</p>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              <div style={{ flex: 1 }}>
-                <FilialDropdown value={pracaInput} onChange={setPracaInput} placeholder="Adicionar praça" />
-              </div>
-              <button type="button" onClick={addPraca} style={{ width: 38, height: 38, background: '#2563eb', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Plus size={18} color="white" />
-              </button>
+            <div style={{ marginBottom: 8 }}>
+              <FilialDropdown value={pracaInput} onChange={addPraca} placeholder="Adicionar praça" />
             </div>
             {pracas.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -344,7 +345,9 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
             )}
           </div>
 
-          <EtapasCarregamento pracasDisponiveis={pracas} initialEtapas={det.etapas || []} onResumoChange={r => setCargaPct(r.pct)} onEtapasChange={setEtapasData} />
+          <div ref={etapasRef}>
+            <EtapasCarregamento pracasDisponiveis={pracas} initialEtapas={det.etapas || []} onResumoChange={r => setCargaPct(r.pct)} onEtapasChange={setEtapasData} />
+          </div>
 
           {/* Assinaturas */}
           <div style={{ marginBottom: 20 }}>

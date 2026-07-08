@@ -128,6 +128,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
   // segunda parte
   const [pracas, setPracas] = useState([])
   const [pracaInput, setPracaInput] = useState('')
+  const etapasRef = useRef(null)
   const [assEncarregado, setAssEncarregado] = useState('')
   const [assConferente, setAssConferente] = useState('')
   const [fotoTraseira, setFotoTraseira] = useState(null)
@@ -157,8 +158,12 @@ export default function CadastrarModal({ onClose, onSalvo }) {
 
   const irForm = () => { setInicio(new Date()); setEtapa(2) }
 
-  const addPraca = () => {
-    if (pracaInput && !pracas.includes(pracaInput)) { setPracas(p => [...p, pracaInput]); setPracaInput('') }
+  const addPraca = (codigo) => {
+    if (codigo && !pracas.includes(codigo)) {
+      setPracas(p => [...p, codigo])
+      setPracaInput('')
+      setTimeout(() => etapasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
+    }
   }
 
   const cadastrar = async () => {
@@ -413,13 +418,8 @@ export default function CadastrarModal({ onClose, onSalvo }) {
               {/* Praças carregadas */}
               <div style={{ marginBottom: 20 }}>
                 <p style={SEC}>Praças carregadas</p>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <FilialDropdown value={pracaInput} onChange={setPracaInput} placeholder="Adicionar praça" />
-                  </div>
-                  <button type="button" onClick={addPraca} style={{ width: 38, height: 38, background: '#2563eb', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Plus size={18} color="white" />
-                  </button>
+                <div style={{ marginBottom: 8 }}>
+                  <FilialDropdown value={pracaInput} onChange={addPraca} placeholder="Adicionar praça" />
                 </div>
                 {pracas.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -433,7 +433,9 @@ export default function CadastrarModal({ onClose, onSalvo }) {
                 )}
               </div>
 
-              <EtapasCarregamento pracasDisponiveis={pracas} onResumoChange={r => setCargaPct(r.pct)} onEtapasChange={setEtapasData} />
+              <div ref={etapasRef}>
+                <EtapasCarregamento pracasDisponiveis={pracas} onResumoChange={r => setCargaPct(r.pct)} onEtapasChange={setEtapasData} />
+              </div>
 
               {/* Assinaturas */}
               <div style={{ marginBottom: 20 }}>
