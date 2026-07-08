@@ -24,8 +24,9 @@ export default function Sidebar({ page, setPage }) {
       flexDirection: 'column',
       boxSizing: 'border-box',
     }}>
-      <div style={{ padding: '20px 20px 12px', cursor: 'pointer' }} onClick={() => setPage('home')}>
-        <img src={logo} alt="Vitlog" style={{ height: 46, objectFit: 'contain' }} />
+      <div style={{ padding: '20px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <img src={logo} alt="Vitlog" style={{ height: 46, objectFit: 'contain', cursor: 'pointer' }} onClick={() => setPage('home')} />
+        <Notificacoes align="left" />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 12px', flex: 1, overflowY: 'auto' }}>
@@ -50,11 +51,6 @@ export default function Sidebar({ page, setPage }) {
             </button>
           )
         })}
-      </div>
-
-      <div style={{ padding: '14px 20px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Notificacoes />
-        <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: '600' }}>Notificações</span>
       </div>
     </div>
   )

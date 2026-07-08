@@ -41,7 +41,7 @@ function derivarNotificacoes(operacoes) {
   return lista.sort((a, b) => new Date(b.ts) - new Date(a.ts))
 }
 
-export default function Notificacoes() {
+export default function Notificacoes({ align = 'right' }) {
   const [aberto, setAberto] = useState(false)
   const [notifs, setNotifs] = useState([])
   const [limpoEm, setLimpoEm] = useState(() => Number(localStorage.getItem('notifLimpoEm') || 0))
@@ -90,7 +90,8 @@ export default function Notificacoes() {
 
       {aberto && (
         <div style={{
-          position: 'absolute', top: 34, right: -6, width: 300,
+          position: 'absolute', top: 34, width: 300,
+          ...(align === 'left' ? { left: -6 } : { right: -6 }),
           background: 'white', borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
           border: '1px solid #f1f5f9', zIndex: 300, overflow: 'hidden'
         }}>
