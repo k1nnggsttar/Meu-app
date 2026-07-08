@@ -118,14 +118,14 @@ export default function OperacaoCard({ op, onAtualizar }) {
   return (
     <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', marginBottom: 10, overflow: 'hidden' }}>
 
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: 16, cursor: 'pointer' }} onClick={() => setEditando(true)}>
         {/* Linha superior */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
               <Truck size={16} color="#64748b" />
               <span style={{ fontWeight: '700', color: '#1e293b', fontSize: 16 }}>{op.placaCarreta || '—'}</span>
-              <Edit2 size={12} color="#cbd5e1" style={{ cursor: 'pointer' }} onClick={() => setEditando(true)} />
+              <Edit2 size={12} color="#cbd5e1" />
             </div>
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
               <span style={badge('#dbeafe', '#2563eb')}>EM CARREGAMENTO</span>
@@ -200,7 +200,7 @@ export default function OperacaoCard({ op, onAtualizar }) {
       </div>
 
       {/* Botões */}
-      <div style={{ display: 'flex', gap: 10, borderTop: '1px solid #f1f5f9', padding: '12px 16px 16px' }}>
+      <div style={{ display: 'flex', gap: 10, borderTop: '1px solid #f1f5f9', padding: '12px 16px 16px' }} onClick={e => e.stopPropagation()}>
         <button
           onClick={() => setConfirmAcao(isPaused ? 'retomar' : 'pausar')}
           style={{ flex: 1, padding: '11px 0', border: 'none', borderRadius: 10, cursor: 'pointer', background: isPaused ? '#16a34a' : '#f59e0b', color: 'white', fontSize: 13, fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'background 0.15s' }}

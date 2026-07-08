@@ -93,7 +93,7 @@ export default function Dashboard({ setPage }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
 
         {/* Card 1: Em andamento */}
-        <div className="card-hover" style={{ background: '#eff6ff', borderRadius: 16, padding: '14px 14px 14px', boxShadow: '0 2px 10px rgba(0,0,0,0.07)' }}>
+        <div className="card-hover" onClick={() => setPage('carregamento')} style={{ background: '#eff6ff', borderRadius: 16, padding: '14px 14px 14px', boxShadow: '0 2px 10px rgba(0,0,0,0.07)', cursor: 'pointer' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <div style={{ background: '#dbeafe', borderRadius: 8, padding: 6, display: 'flex' }}>
               <Truck size={15} color="#2563eb" />
@@ -110,7 +110,7 @@ export default function Dashboard({ setPage }) {
         </div>
 
         {/* Card 2: Praças carregando */}
-        <div className="card-hover" style={{ background: '#f0fdf4', borderRadius: 16, padding: '14px 14px 14px', boxShadow: '0 2px 10px rgba(0,0,0,0.07)' }}>
+        <div className="card-hover" onClick={() => setPage('pracas')} style={{ background: '#f0fdf4', borderRadius: 16, padding: '14px 14px 14px', boxShadow: '0 2px 10px rgba(0,0,0,0.07)', cursor: 'pointer' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <div style={{ background: '#dcfce7', borderRadius: 8, padding: 6, display: 'flex' }}>
               <Shield size={15} color="#16a34a" />

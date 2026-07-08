@@ -19,7 +19,12 @@ export default function Header({ setPage }) {
       zIndex: 100,
       boxSizing: 'border-box'
     }}>
-      <img src={logo} alt="Vitlog" style={{ height: 54, objectFit: 'contain', marginLeft: -8 }} />
+      <img
+        src={logo}
+        alt="Vitlog"
+        onClick={() => setPage('home')}
+        style={{ height: 54, objectFit: 'contain', marginLeft: -8, cursor: 'pointer' }}
+      />
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
         <Notificacoes />
