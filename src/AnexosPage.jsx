@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Search, Image as ImageIcon, FileText, Paperclip, Download, X, AlertTriangle, ChevronRight, Clock } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { ANEXOS_LIMPO_EVENT } from './Fotos'
+import useIsDesktop from './hooks/useIsDesktop'
 
 const CATS = {
   checklist:  { label: 'Fotos checklist', desc: 'Checklist de saída e retorno',   icon: ImageIcon, cor: '#2563eb', bg: '#eff6ff' },
@@ -53,6 +54,7 @@ async function salvarPendencia(op, chave, patch) {
 }
 
 export default function AnexosPage() {
+  const isDesktop = useIsDesktop()
   const [operacoes, setOperacoes] = useState([])
   const [busca, setBusca] = useState('')
   const [categoriaFiltro, setCategoriaFiltro] = useState(null)
@@ -155,7 +157,7 @@ export default function AnexosPage() {
   })
 
   return (
-    <div style={{ padding: '20px 16px' }}>
+    <div style={{ padding: isDesktop ? 0 : '20px 16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Anexos</h2>
@@ -207,7 +209,7 @@ export default function AnexosPage() {
 
       {/* Categorias */}
       <p style={{ fontSize: 15, fontWeight: '700', color: '#1e293b', margin: '0 0 10px' }}>Categorias</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isDesktop ? 16 : 10, marginBottom: 20, maxWidth: isDesktop ? 640 : undefined }}>
         {categorias.map((c, i) => {
           const catInfo = CATS[c.key]
           const Icon = catInfo.icon
@@ -293,7 +295,7 @@ export default function AnexosPage() {
       {filtrados.length === 0 ? (
         <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, marginTop: 30 }}>Nenhum anexo encontrado.</p>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(auto-fill, minmax(140px, 1fr))' : '1fr 1fr 1fr', gap: 8 }}>
           {filtrados.map((a, i) => {
             const catInfo = CATS[a.categoria] || CATS.documento
             const Icon = catInfo.icon

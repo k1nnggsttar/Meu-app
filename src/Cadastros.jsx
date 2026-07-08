@@ -5,6 +5,7 @@ import { getNomeFilial } from './lib/filiais'
 import { carregarMotoristas, isMotoristaAtivo } from './lib/motoristas'
 import { carregarVeiculos } from './lib/veiculos'
 import DetalheModal from './DetalheModal'
+import useIsDesktop from './hooks/useIsDesktop'
 
 function fmtHora(iso) {
   const d = new Date(iso)
@@ -25,6 +26,7 @@ function fmtData(iso) {
 }
 
 export default function Cadastros() {
+  const isDesktop = useIsDesktop()
   const [operacoes, setOperacoes] = useState([])
   const [motoristas, setMotoristas] = useState([])
   const [veiculos, setVeiculos] = useState([])
@@ -66,15 +68,15 @@ export default function Cadastros() {
   const temResultados = resultadosMotoristas.length > 0 || resultadosVeiculos.length > 0 || resultadosBusca.length > 0
 
   if (secao === 'motoristas') {
-    return <SubMotoristas motoristas={motoristas} onVoltar={() => setSecao(null)} />
+    return <SubMotoristas motoristas={motoristas} onVoltar={() => setSecao(null)} isDesktop={isDesktop} />
   }
 
   if (secao === 'veiculos') {
-    return <SubVeiculos veiculos={veiculos} onVoltar={() => setSecao(null)} />
+    return <SubVeiculos veiculos={veiculos} onVoltar={() => setSecao(null)} isDesktop={isDesktop} />
   }
 
   return (
-    <div style={{ padding: '20px 16px' }}>
+    <div style={{ padding: isDesktop ? 0 : '20px 16px' }}>
       <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Cadastro</h2>
       <p style={{ fontSize: 13, color: '#94a3b8', margin: '3px 0 16px' }}>Gerencie os cadastros da frota</p>
 
@@ -245,6 +247,7 @@ export default function Cadastros() {
             </div>
           </div>
 
+          <div style={isDesktop ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 } : undefined}>
           {/* Card Motoristas */}
           <button
             className="card-hover"
@@ -252,7 +255,7 @@ export default function Cadastros() {
             style={{
               width: '100%', background: 'white', borderRadius: 16, padding: '16px',
               boxShadow: '0 2px 10px rgba(0,0,0,0.07)', border: 'none', cursor: 'pointer',
-              textAlign: 'left', marginBottom: 10, display: 'block'
+              textAlign: 'left', marginBottom: isDesktop ? 0 : 10, display: 'block'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -283,7 +286,7 @@ export default function Cadastros() {
             style={{
               width: '100%', background: 'white', borderRadius: 16, padding: '16px',
               boxShadow: '0 2px 10px rgba(0,0,0,0.07)', border: 'none', cursor: 'pointer',
-              textAlign: 'left', marginBottom: 16, display: 'block'
+              textAlign: 'left', marginBottom: isDesktop ? 0 : 16, display: 'block'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -306,6 +309,7 @@ export default function Cadastros() {
               <StatPill cor="#ea580c" label={`${veiculosCavalo.length} cavalos`} />
             </div>
           </button>
+          </div>
 
           {/* Atividade recente */}
           <div className="card-hover" style={{
@@ -373,7 +377,7 @@ function StatPill({ cor, label }) {
   )
 }
 
-function SubMotoristas({ motoristas, onVoltar }) {
+function SubMotoristas({ motoristas, onVoltar, isDesktop }) {
   const [busca, setBusca] = useState('')
   const [filtroFilial, setFiltroFilial] = useState('')
   const [sel, setSel] = useState(null)
@@ -387,7 +391,7 @@ function SubMotoristas({ motoristas, onVoltar }) {
   })
 
   return (
-    <div style={{ padding: '20px 16px' }}>
+    <div style={{ padding: isDesktop ? 0 : '20px 16px' }}>
       <button onClick={onVoltar} style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: 13, fontWeight: '600', cursor: 'pointer', padding: '0 0 12px', display: 'flex', alignItems: 'center', gap: 4 }}>
         ← Voltar
       </button>
@@ -416,12 +420,13 @@ function SubMotoristas({ motoristas, onVoltar }) {
       ) : filtrados.length === 0 ? (
         <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, marginTop: 40 }}>Nenhum motorista encontrado.</p>
       ) : (
-        filtrados.map(m => {
+        <div style={isDesktop ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 10 } : undefined}>
+        {filtrados.map(m => {
           const ativo = isMotoristaAtivo(m)
           return (
             <div key={m.matricula + m.nome} className="card-hover" onClick={() => setSel(m)} style={{
               background: 'white', borderRadius: 12, padding: '12px 16px',
-              marginBottom: 8, border: '1px solid #e2e8f0',
+              marginBottom: isDesktop ? 0 : 8, border: '1px solid #e2e8f0',
               display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer'
             }}>
               <div style={{
@@ -448,7 +453,8 @@ function SubMotoristas({ motoristas, onVoltar }) {
               </span>
             </div>
           )
-        })
+        })}
+        </div>
       )}
 
       {sel && (
@@ -476,7 +482,7 @@ function SubMotoristas({ motoristas, onVoltar }) {
   )
 }
 
-function SubVeiculos({ veiculos, onVoltar }) {
+function SubVeiculos({ veiculos, onVoltar, isDesktop }) {
   const [busca, setBusca] = useState('')
   const [filtroFilial, setFiltroFilial] = useState('')
   const [sel, setSel] = useState(null)
@@ -490,7 +496,7 @@ function SubVeiculos({ veiculos, onVoltar }) {
   })
 
   return (
-    <div style={{ padding: '20px 16px' }}>
+    <div style={{ padding: isDesktop ? 0 : '20px 16px' }}>
       <button onClick={onVoltar} style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: 13, fontWeight: '600', cursor: 'pointer', padding: '0 0 12px', display: 'flex', alignItems: 'center', gap: 4 }}>
         ← Voltar
       </button>
@@ -519,10 +525,11 @@ function SubVeiculos({ veiculos, onVoltar }) {
       ) : filtrados.length === 0 ? (
         <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, marginTop: 40 }}>Nenhum veículo encontrado.</p>
       ) : (
-        filtrados.map((v, i) => (
+        <div style={isDesktop ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 10 } : undefined}>
+        {filtrados.map((v, i) => (
           <div key={v.placa + i} className="card-hover" onClick={() => setSel(v)} style={{
             background: 'white', borderRadius: 12, padding: '12px 16px',
-            marginBottom: 8, border: '1px solid #e2e8f0',
+            marginBottom: isDesktop ? 0 : 8, border: '1px solid #e2e8f0',
             display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer'
           }}>
             <div style={{
@@ -543,7 +550,8 @@ function SubVeiculos({ veiculos, onVoltar }) {
               </span>
             )}
           </div>
-        ))
+        ))}
+        </div>
       )}
 
       {sel && (

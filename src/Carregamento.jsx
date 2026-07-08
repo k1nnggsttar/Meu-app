@@ -3,8 +3,10 @@ import { supabase } from "./lib/supabase"
 import { Search, Plus } from 'lucide-react'
 import CadastrarModal from "./CadastrarModal"
 import OperacaoCard from "./OperacaoCard"
+import useIsDesktop from "./hooks/useIsDesktop"
 
 export default function Carregamento() {
+  const isDesktop = useIsDesktop()
   const [operacoes, setOperacoes] = useState([])
   const [busca, setBusca] = useState('')
   const [modalAberto, setModalAberto] = useState(false)
@@ -30,14 +32,14 @@ export default function Carregamento() {
   )
 
   return (
-    <div style={{ padding: '20px 16px' }}>
+    <div style={{ padding: isDesktop ? 0 : '20px 16px' }}>
       <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Carregamento</h2>
       <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 20px' }}>Operações em andamento</p>
 
       <button
         onClick={() => setModalAberto(true)}
         style={{
-          width: '100%', padding: 14, border: '2px dashed #93c5fd',
+          width: isDesktop ? 260 : '100%', padding: 14, border: '2px dashed #93c5fd',
           borderRadius: 12, background: '#eff6ff', color: '#2563eb',
           fontSize: 14, fontWeight: '600', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -58,7 +60,8 @@ export default function Carregamento() {
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
         background: 'white', border: '1px solid #e2e8f0',
-        borderRadius: 10, padding: '10px 14px', marginBottom: 16
+        borderRadius: 10, padding: '10px 14px', marginBottom: 16,
+        maxWidth: isDesktop ? 420 : undefined,
       }}>
         <Search size={15} color="#94a3b8" />
         <input
@@ -74,9 +77,11 @@ export default function Carregamento() {
           Nenhum carregamento em andamento.
         </p>
       ) : (
-        filtradas.map(op => (
-          <OperacaoCard key={op.id} op={op} onAtualizar={carregar} />
-        ))
+        <div style={isDesktop ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 12 } : undefined}>
+          {filtradas.map(op => (
+            <OperacaoCard key={op.id} op={op} onAtualizar={carregar} />
+          ))}
+        </div>
       )}
     </div>
   )

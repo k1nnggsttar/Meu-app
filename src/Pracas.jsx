@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
 import { Search, MapPin } from 'lucide-react'
+import useIsDesktop from "./hooks/useIsDesktop"
 
 export default function Pracas() {
+  const isDesktop = useIsDesktop()
   const [operacoes, setOperacoes] = useState([])
   const [busca, setBusca] = useState('')
 
@@ -31,7 +33,7 @@ export default function Pracas() {
   )
 
   return (
-    <div style={{ padding: '20px 16px' }}>
+    <div style={{ padding: isDesktop ? 0 : '20px 16px' }}>
       <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Praças</h2>
       <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 20px' }}>O que está sendo carregado</p>
 
@@ -39,7 +41,8 @@ export default function Pracas() {
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
         background: 'white', border: '1px solid #e2e8f0',
-        borderRadius: 10, padding: '10px 14px', marginBottom: 16
+        borderRadius: 10, padding: '10px 14px', marginBottom: 16,
+        maxWidth: isDesktop ? 420 : undefined,
       }}>
         <Search size={15} color="#94a3b8" />
         <input
@@ -59,10 +62,11 @@ export default function Pracas() {
           Nenhuma praça em carregamento.
         </p>
       ) : (
-        praçasFiltradas.map(([nome, ops]) => (
+      <div style={isDesktop ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 } : undefined}>
+        {praçasFiltradas.map(([nome, ops]) => (
           <div key={nome} style={{
             background: 'white', borderRadius: 16,
-            padding: 16, border: '1px solid #e2e8f0', marginBottom: 10
+            padding: 16, border: '1px solid #e2e8f0', marginBottom: isDesktop ? 0 : 10
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <MapPin size={15} color="#2563eb" />
@@ -95,7 +99,8 @@ export default function Pracas() {
               </div>
             ))}
           </div>
-        ))
+        ))}
+      </div>
       )}
     </div>
   )

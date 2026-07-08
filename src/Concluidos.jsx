@@ -3,8 +3,10 @@ import { supabase } from "./lib/supabase"
 import { CheckCircle, MapPin, Eye, Search } from 'lucide-react'
 import { getNomeFilial } from "./lib/filiais"
 import ConcluidoDetalhesModal from "./ConcluidoDetalhesModal"
+import useIsDesktop from "./hooks/useIsDesktop"
 
 export default function Concluidos() {
+  const isDesktop = useIsDesktop()
   const [operacoes, setOperacoes] = useState([])
   const [verOp, setVerOp] = useState(null)
   const [busca, setBusca] = useState('')
@@ -37,13 +39,13 @@ export default function Concluidos() {
   })
 
   return (
-    <div style={{ padding: '20px 16px' }}>
+    <div style={{ padding: isDesktop ? 0 : '20px 16px' }}>
       <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Concluídos</h2>
       <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 16px' }}>Operações finalizadas</p>
 
       {operacoes.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px' }}>
+        <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: 10, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px', flex: isDesktop ? '1 1 320px' : undefined }}>
             <Search size={15} color="#94a3b8" />
             <input
               placeholder="Pesquisar placa, motorista, destino..."
@@ -55,7 +57,7 @@ export default function Concluidos() {
           <select
             value={filtroDest}
             onChange={e => setFiltroDest(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13, color: filtroDest ? '#334155' : '#94a3b8', background: 'white', boxSizing: 'border-box' }}
+            style={{ width: isDesktop ? 260 : '100%', flexShrink: 0, padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13, color: filtroDest ? '#334155' : '#94a3b8', background: 'white', boxSizing: 'border-box' }}
           >
             <option value="">Todos os destinatários</option>
             {destinos.map(d => (
@@ -74,10 +76,11 @@ export default function Concluidos() {
           Nenhum resultado para o filtro.
         </p>
       ) : (
-        filtradas.map((op) => (
+        <div style={isDesktop ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 12 } : undefined}>
+        {filtradas.map((op) => (
           <div key={op.id || op.placaCarreta} style={{
             background: 'white', borderRadius: 16,
-            padding: 16, border: '1px solid #e2e8f0', marginBottom: 10
+            padding: 16, border: '1px solid #e2e8f0', marginBottom: isDesktop ? 0 : 10
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -135,7 +138,8 @@ export default function Concluidos() {
               <Eye size={14} /> Ver detalhes
             </button>
           </div>
-        ))
+        ))}
+        </div>
       )}
 
       {verOp && <ConcluidoDetalhesModal op={verOp} onClose={() => setVerOp(null)} />}

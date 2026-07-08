@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
 import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, ExternalLink, AlertTriangle, Package } from 'lucide-react'
 import { getNomeFilial } from "./lib/filiais"
+import useIsDesktop from "./hooks/useIsDesktop"
 
 const HELP_DESK_URL = 'https://vitlog.reportload.com/help_desk'
 
@@ -39,6 +40,7 @@ function calcProdSec(op, now) {
 }
 
 export default function Dashboard({ setPage }) {
+  const isDesktop = useIsDesktop()
   const [operacoes, setOperacoes] = useState([])
   const [now, setNow] = useState(Date.now())
 
@@ -85,12 +87,12 @@ export default function Dashboard({ setPage }) {
   ]
 
   return (
-    <div style={{ padding: '20px 16px' }}>
+    <div style={{ padding: isDesktop ? 0 : '20px 16px' }}>
       <h2 style={{ fontSize: 22, fontWeight: '700', color: '#1e293b' }}>Página inicial</h2>
       <p style={{ fontSize: 13, color: '#94a3b8', margin: '3px 0 20px' }}>Visão geral das operações</p>
 
-      {/* Cards 2x2 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+      {/* Cards 2x2 (4 em linha no desktop) */}
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : '1fr 1fr', gap: 12, marginBottom: 14 }}>
 
         {/* Card 1: Em andamento */}
         <div className="card-hover" onClick={() => setPage('carregamento')} style={{ background: '#eff6ff', borderRadius: 16, padding: '14px 14px 14px', boxShadow: '0 2px 10px rgba(0,0,0,0.07)', cursor: 'pointer' }}>
@@ -158,10 +160,12 @@ export default function Dashboard({ setPage }) {
         </div>
       </div>
 
+      <div style={isDesktop ? { display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 12, alignItems: 'start' } : undefined}>
+
       {/* Produção em andamento */}
       <div className="card-hover" style={{
         background: 'white', borderRadius: 16,
-        padding: 16, marginBottom: 12,
+        padding: 16, marginBottom: isDesktop ? 0 : 12,
         boxShadow: '0 2px 10px rgba(0,0,0,0.07)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
@@ -240,7 +244,7 @@ export default function Dashboard({ setPage }) {
       {/* Praças em carregamento */}
       <div className="card-hover" style={{
         background: 'white', borderRadius: 16,
-        padding: 16, marginBottom: 12,
+        padding: 16, marginBottom: isDesktop ? 0 : 12,
         boxShadow: '0 2px 10px rgba(0,0,0,0.07)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
@@ -285,6 +289,8 @@ export default function Dashboard({ setPage }) {
             </div>
           ))
         )}
+      </div>
+
       </div>
 
       {/* Help Desk */}
