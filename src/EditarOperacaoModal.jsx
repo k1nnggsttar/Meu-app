@@ -323,11 +323,11 @@ export default function EditarOperacaoModal({ op, onClose, onSalvo }) {
           {/* Filiais */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
             <div>
-              <label style={LBL}>Filial Destinatária</label>
+              <label style={LBL}>Filial de destino</label>
               <FilialDropdown value={destino} onChange={setDestino} placeholder="Selecione filial" opcoes={FILIAIS_ROTA} />
             </div>
             <div>
-              <label style={LBL}>Filial Remetente</label>
+              <label style={LBL}>Filial de origem</label>
               <FilialDropdown value={origem} onChange={setOrigem} placeholder="Filial de origem" opcoes={FILIAIS_ROTA} />
             </div>
           </div>

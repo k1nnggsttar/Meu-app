@@ -388,11 +388,11 @@ export default function CadastrarModal({ onClose, onSalvo }) {
               {/* Filiais */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
                 <div>
-                  <label style={LBL}>Filial Destinatária</label>
+                  <label style={LBL}>Filial de destino</label>
                   <FilialDropdown value={filialDest} onChange={setFilialDest} placeholder="Selecione filial" opcoes={FILIAIS_ROTA} />
                 </div>
                 <div>
-                  <label style={LBL}>Filial Remetente</label>
+                  <label style={LBL}>Filial de origem</label>
                   <FilialDropdown value={filialOrig} onChange={setFilialOrig} placeholder="Filial de origem" opcoes={FILIAIS_ROTA} />
                 </div>
               </div>
