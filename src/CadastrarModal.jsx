@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react"
-import { X, Paperclip, Search, Plus, ChevronDown, Camera } from 'lucide-react'
+import { X, Paperclip, Search, Plus, ChevronDown, Camera, Check } from 'lucide-react'
 import { supabase } from "./lib/supabase"
 import { uploadAnexos, enviarAnexosOcorrencias } from "./lib/fotos"
 import { montarDetalhes } from "./lib/detalhes"
@@ -35,7 +35,7 @@ function fmt(date) {
   return `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}/${date.getFullYear()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
 }
 
-function FilialDropdown({ value, onChange, placeholder = 'Selecione filial', opcoes = FILIAIS }) {
+function FilialDropdown({ value, onChange, placeholder = 'Selecione filial', opcoes = FILIAIS, multi = false, selecionados = [], onClose }) {
   const [open, setOpen] = useState(false)
   const [busca, setBusca] = useState('')
   const ref = useRef(null)
@@ -43,11 +43,11 @@ function FilialDropdown({ value, onChange, placeholder = 'Selecione filial', opc
   useEffect(() => {
     if (!open) return
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setBusca('') }
+      if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setBusca(''); onClose?.() }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [open])
+  }, [open, onClose])
 
   const filtradas = opcoes.filter(f =>
     f.codigo.toLowerCase().includes(busca.toLowerCase()) ||
@@ -57,7 +57,7 @@ function FilialDropdown({ value, onChange, placeholder = 'Selecione filial', opc
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button type="button" onClick={() => setOpen(o => !o)} style={{
+      <button type="button" onClick={() => setOpen(o => { const next = !o; if (!next) onClose?.(); return next })} style={{
         ...INP, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         cursor: 'pointer', border: `1px solid ${open ? '#2563eb' : '#e2e8f0'}`,
         color: sel ? '#1e293b' : '#94a3b8'
@@ -81,21 +81,27 @@ function FilialDropdown({ value, onChange, placeholder = 'Selecione filial', opc
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {filtradas.length === 0
               ? <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 12, padding: '12px 0', margin: 0 }}>Nenhuma encontrada</p>
-              : filtradas.map(f => (
-                <button key={f.codigo} type="button"
-                  onClick={() => { onChange(f.codigo); setOpen(false); setBusca('') }}
-                  style={{
-                    width: '100%', padding: '9px 16px', border: 'none',
-                    background: value === f.codigo ? '#eff6ff' : 'transparent',
-                    textAlign: 'left', cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center', fontSize: 13
-                  }}
-                  onMouseEnter={e => { if (value !== f.codigo) e.currentTarget.style.background = '#f8fafc' }}
-                  onMouseLeave={e => { if (value !== f.codigo) e.currentTarget.style.background = 'transparent' }}
-                >
-                  <span style={{ fontWeight: '700', color: '#1e293b', minWidth: 36 }}>{f.codigo}</span>
-                  <span style={{ color: '#64748b' }}>| {f.nome}</span>
-                </button>
-              ))
+              : filtradas.map(f => {
+                const marcado = multi ? selecionados.includes(f.codigo) : value === f.codigo
+                return (
+                  <button key={f.codigo} type="button"
+                    onClick={() => { onChange(f.codigo); setBusca(''); if (!multi) { setOpen(false); onClose?.() } }}
+                    style={{
+                      width: '100%', padding: '9px 16px', border: 'none',
+                      background: marcado ? (multi ? '#f0fdf4' : '#eff6ff') : 'transparent',
+                      textAlign: 'left', cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between', fontSize: 13
+                    }}
+                    onMouseEnter={e => { if (!marcado) e.currentTarget.style.background = '#f8fafc' }}
+                    onMouseLeave={e => { if (!marcado) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <span style={{ fontWeight: '700', color: '#1e293b', minWidth: 36 }}>{f.codigo}</span>
+                      <span style={{ color: '#64748b' }}>| {f.nome}</span>
+                    </span>
+                    {multi && marcado && <Check size={14} color="#16a34a" style={{ flexShrink: 0 }} />}
+                  </button>
+                )
+              })
             }
           </div>
         </div>
@@ -162,6 +168,11 @@ export default function CadastrarModal({ onClose, onSalvo }) {
     if (codigo && !pracas.includes(codigo)) {
       setPracas(p => [...p, codigo])
       setPracaInput('')
+    }
+  }
+
+  const fecharPracaDropdown = () => {
+    if (pracas.length > 0) {
       setTimeout(() => etapasRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
     }
   }
@@ -419,7 +430,7 @@ export default function CadastrarModal({ onClose, onSalvo }) {
               <div style={{ marginBottom: 20 }}>
                 <p style={SEC}>Praças carregadas</p>
                 <div style={{ marginBottom: 8 }}>
-                  <FilialDropdown value={pracaInput} onChange={addPraca} placeholder="Adicionar praça" />
+                  <FilialDropdown value={pracaInput} onChange={addPraca} placeholder="Adicionar praça" multi selecionados={pracas} onClose={fecharPracaDropdown} />
                 </div>
                 {pracas.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
