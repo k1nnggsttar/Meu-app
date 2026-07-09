@@ -256,6 +256,7 @@ export default function Dashboard({ setPage }) {
         )}
       </div>
 
+      <div style={isDesktop ? { display: 'flex', flexDirection: 'column', gap: 12 } : undefined}>
       {/* Praças em carregamento */}
       <div className="card-hover" style={{
         background: 'white', borderRadius: 16,
@@ -306,15 +307,17 @@ export default function Dashboard({ setPage }) {
         )}
       </div>
 
-      </div>
-
       {/* Frete e mercadoria */}
       <div className="card-hover" style={{
         background: 'white', borderRadius: 16,
-        padding: 16, marginBottom: 12,
+        padding: 16, marginBottom: isDesktop ? 0 : 12,
         boxShadow: '0 2px 10px rgba(0,0,0,0.07)'
       }}>
         <FreteMercadoriaChart dias={ultimos15Dias} />
+      </div>
+
+      </div>
+
       </div>
 
       {/* Help Desk */}
