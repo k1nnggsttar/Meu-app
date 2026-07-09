@@ -11,6 +11,7 @@ import Header from "./Header"
 import BottomNav from "./BottomNav"
 import Sidebar from "./Sidebar"
 import useIsDesktop from "./hooks/useIsDesktop"
+import { PerfilProvider } from "./lib/PerfilProvider"
 
 function App() {
   const [user, setUser] = useState(null)
@@ -58,30 +59,34 @@ function App() {
 
   if (!isDesktop) {
     return (
-      <div style={{
-        maxWidth: 430,
-        margin: '0 auto',
-        minHeight: '100vh',
-        background: '#f8fafc',
-        position: 'relative',
-        paddingBottom: 80
-      }}>
-        <Header setPage={setPage} />
-        <div style={{ paddingTop: 68 }}>
-          {renderPage()}
+      <PerfilProvider user={user}>
+        <div style={{
+          maxWidth: 430,
+          margin: '0 auto',
+          minHeight: '100vh',
+          background: '#f8fafc',
+          position: 'relative',
+          paddingBottom: 80
+        }}>
+          <Header setPage={setPage} />
+          <div style={{ paddingTop: 68 }}>
+            {renderPage()}
+          </div>
+          <BottomNav page={page} setPage={setPage} />
         </div>
-        <BottomNav page={page} setPage={setPage} />
-      </div>
+      </PerfilProvider>
     )
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
-      <Sidebar page={page} setPage={setPage} />
-      <main style={{ flex: 1, minWidth: 0, maxWidth: 1400, margin: '0 auto', padding: '32px 40px', boxSizing: 'border-box' }}>
-        {renderPage()}
-      </main>
-    </div>
+    <PerfilProvider user={user}>
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+        <Sidebar page={page} setPage={setPage} />
+        <main style={{ flex: 1, minWidth: 0, maxWidth: 1400, margin: '0 auto', padding: '32px 40px', boxSizing: 'border-box' }}>
+          {renderPage()}
+        </main>
+      </div>
+    </PerfilProvider>
   )
 }
 

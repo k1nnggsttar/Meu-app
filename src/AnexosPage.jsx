@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Search, Image as ImageIcon, FileText, Paperclip, Download, X, AlertTriangle, ChevronRight, Clock } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { ANEXOS_LIMPO_EVENT } from './Fotos'
 import useIsDesktop from './hooks/useIsDesktop'
+import { usePerfil } from './lib/perfilContext'
+import { filtrarPorFilial } from './lib/filtroFilial'
 
 const CATS = {
   checklist:  { label: 'Fotos checklist', desc: 'Checklist de saída e retorno',   icon: ImageIcon, cor: '#2563eb', bg: '#eff6ff' },
@@ -55,6 +57,7 @@ async function salvarPendencia(op, chave, patch) {
 
 export default function AnexosPage() {
   const isDesktop = useIsDesktop()
+  const perfil = usePerfil()
   const [operacoes, setOperacoes] = useState([])
   const [busca, setBusca] = useState('')
   const [categoriaFiltro, setCategoriaFiltro] = useState(null)
@@ -71,11 +74,12 @@ export default function AnexosPage() {
     setExpandido(antigo === key ? null : key)
   }
 
-  useEffect(() => { carregar() }, [])
-  const carregar = async () => {
+  const carregar = useCallback(async () => {
     const { data } = await supabase.from('operacoes').select('*').order('created_at', { ascending: false })
-    setOperacoes(data || [])
-  }
+    setOperacoes(filtrarPorFilial(data || [], perfil))
+  }, [perfil])
+
+  useEffect(() => { carregar() }, [carregar])
 
   // Unifica os itens do array `fotos` de cada operação (checklist/traseira/documento)
   // com os anexos de ocorrência já enviados (o.anexoUrl) — uma lista só de "anexos".

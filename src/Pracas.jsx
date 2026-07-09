@@ -1,24 +1,27 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
 import { Search, MapPin } from 'lucide-react'
 import useIsDesktop from "./hooks/useIsDesktop"
+import { usePerfil } from "./lib/perfilContext"
+import { filtrarPorFilial } from "./lib/filtroFilial"
 
 export default function Pracas() {
   const isDesktop = useIsDesktop()
+  const perfil = usePerfil()
   const [operacoes, setOperacoes] = useState([])
   const [busca, setBusca] = useState('')
 
-  useEffect(() => {
-    carregar()
-  }, [])
-
-  const carregar = async () => {
+  const carregar = useCallback(async () => {
     const { data } = await supabase
       .from("operacoes")
       .select("*")
       .eq("status", "ativo")
-    setOperacoes(data || [])
-  }
+    setOperacoes(filtrarPorFilial(data || [], perfil))
+  }, [perfil])
+
+  useEffect(() => {
+    carregar()
+  }, [carregar])
 
   // Agrupa por destino (praça)
   const praças = operacoes.reduce((acc, op) => {

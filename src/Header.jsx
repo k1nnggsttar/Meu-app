@@ -1,6 +1,7 @@
 import logo from './assets/logo.png'
 import Notificacoes from './Notificacoes'
 import Fotos from './Fotos'
+import FilialBadge from './FilialBadge'
 
 export default function Header({ setPage }) {
   return (
@@ -19,14 +20,17 @@ export default function Header({ setPage }) {
       zIndex: 100,
       boxSizing: 'border-box'
     }}>
-      <img
-        src={logo}
-        alt="Vitlog"
-        onClick={() => setPage('home')}
-        style={{ height: 54, objectFit: 'contain', marginLeft: -8, cursor: 'pointer' }}
-      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+        <img
+          src={logo}
+          alt="Vitlog"
+          onClick={() => setPage('home')}
+          style={{ height: 54, objectFit: 'contain', marginLeft: -8, cursor: 'pointer', flexShrink: 0 }}
+        />
+        <FilialBadge style={{ maxWidth: 110 }} />
+      </div>
 
-      <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexShrink: 0 }}>
         <Notificacoes />
         <Fotos onClick={() => setPage('fotos')} />
       </div>

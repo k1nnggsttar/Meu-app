@@ -1,29 +1,32 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
 import { CheckCircle, MapPin, Eye, Search } from 'lucide-react'
 import { getNomeFilial } from "./lib/filiais"
 import ConcluidoDetalhesModal from "./ConcluidoDetalhesModal"
 import useIsDesktop from "./hooks/useIsDesktop"
+import { usePerfil } from "./lib/perfilContext"
+import { filtrarPorFilial } from "./lib/filtroFilial"
 
 export default function Concluidos() {
   const isDesktop = useIsDesktop()
+  const perfil = usePerfil()
   const [operacoes, setOperacoes] = useState([])
   const [verOp, setVerOp] = useState(null)
   const [busca, setBusca] = useState('')
   const [filtroDest, setFiltroDest] = useState('')
 
-  useEffect(() => {
-    carregar()
-  }, [])
-
-  const carregar = async () => {
+  const carregar = useCallback(async () => {
     const { data } = await supabase
       .from("operacoes")
       .select("*")
       .eq("status", "concluido")
       .order("created_at", { ascending: false })
-    setOperacoes(data || [])
-  }
+    setOperacoes(filtrarPorFilial(data || [], perfil))
+  }, [perfil])
+
+  useEffect(() => {
+    carregar()
+  }, [carregar])
 
   const formatData = (iso) => {
     const d = new Date(iso)

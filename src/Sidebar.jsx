@@ -1,6 +1,7 @@
 import { Home, Truck, ClipboardList, CheckCircle, Camera } from 'lucide-react'
 import logo from './assets/logo.png'
 import Notificacoes from './Notificacoes'
+import FilialBadge from './FilialBadge'
 
 const tabs = [
   { key: 'home',         label: 'Início',       icon: Home },
@@ -27,6 +28,10 @@ export default function Sidebar({ page, setPage }) {
       <div style={{ padding: '20px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <img src={logo} alt="Vitlog" style={{ height: 46, objectFit: 'contain', cursor: 'pointer' }} onClick={() => setPage('home')} />
         <Notificacoes align="left" />
+      </div>
+
+      <div style={{ padding: '0 20px 16px' }}>
+        <FilialBadge style={{ maxWidth: '100%' }} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '8px 12px', flex: 1, overflowY: 'auto' }}>

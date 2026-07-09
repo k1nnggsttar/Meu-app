@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Camera } from 'lucide-react'
 import { supabase } from './lib/supabase'
+import { usePerfil } from './lib/perfilContext'
+import { filtrarPorFilial } from './lib/filtroFilial'
 
 const LIMPO_KEY = 'anexosLimpoEm'
 export const ANEXOS_LIMPO_EVENT = 'anexos-limpo'
@@ -23,19 +25,20 @@ function contarAnexosNaoVistos(operacoes, limpoEm) {
 }
 
 export default function Fotos({ onClick }) {
+  const perfil = usePerfil()
   const [total, setTotal] = useState(0)
 
   useEffect(() => {
     const carregar = async () => {
-      const { data } = await supabase.from('operacoes').select('fotos, detalhes, created_at')
+      const { data } = await supabase.from('operacoes').select('fotos, detalhes, created_at, origem, destino')
       const limpoEm = Number(localStorage.getItem(LIMPO_KEY) || 0)
-      setTotal(contarAnexosNaoVistos(data || [], limpoEm))
+      setTotal(contarAnexosNaoVistos(filtrarPorFilial(data || [], perfil), limpoEm))
     }
     carregar()
     const id = setInterval(carregar, 30000)
     window.addEventListener(ANEXOS_LIMPO_EVENT, carregar)
     return () => { clearInterval(id); window.removeEventListener(ANEXOS_LIMPO_EVENT, carregar) }
-  }, [])
+  }, [perfil])
 
   return (
     <div className="icon-hover" style={{ position: 'relative', cursor: 'pointer' }} onClick={onClick}>

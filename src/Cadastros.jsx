@@ -6,6 +6,8 @@ import { carregarMotoristas, isMotoristaAtivo } from './lib/motoristas'
 import { carregarVeiculos } from './lib/veiculos'
 import DetalheModal from './DetalheModal'
 import useIsDesktop from './hooks/useIsDesktop'
+import { usePerfil } from './lib/perfilContext'
+import { filtrarPorFilial } from './lib/filtroFilial'
 
 function fmtHora(iso) {
   const d = new Date(iso)
@@ -27,6 +29,7 @@ function fmtData(iso) {
 
 export default function Cadastros() {
   const isDesktop = useIsDesktop()
+  const perfil = usePerfil()
   const [operacoes, setOperacoes] = useState([])
   const [motoristas, setMotoristas] = useState([])
   const [veiculos, setVeiculos] = useState([])
@@ -36,11 +39,11 @@ export default function Cadastros() {
 
   useEffect(() => {
     supabase.from('operacoes').select('*').order('created_at', { ascending: false }).then(({ data }) => {
-      setOperacoes(data || [])
+      setOperacoes(filtrarPorFilial(data || [], perfil))
     })
     carregarMotoristas().then(setMotoristas)
     carregarVeiculos().then(setVeiculos)
-  }, [])
+  }, [perfil])
 
   const motoristasAtivosPlan = motoristas.filter(isMotoristaAtivo)
   const veiculosCavalo = veiculos.filter(v => String(v.tipo).toUpperCase().includes('CAVALO'))

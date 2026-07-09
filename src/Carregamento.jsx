@@ -1,28 +1,31 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
 import { Search, Plus } from 'lucide-react'
 import CadastrarModal from "./CadastrarModal"
 import OperacaoCard from "./OperacaoCard"
 import useIsDesktop from "./hooks/useIsDesktop"
+import { usePerfil } from "./lib/perfilContext"
+import { filtrarPorFilial } from "./lib/filtroFilial"
 
 export default function Carregamento() {
   const isDesktop = useIsDesktop()
+  const perfil = usePerfil()
   const [operacoes, setOperacoes] = useState([])
   const [busca, setBusca] = useState('')
   const [modalAberto, setModalAberto] = useState(false)
 
-  useEffect(() => {
-    carregar()
-  }, [])
-
-  const carregar = async () => {
+  const carregar = useCallback(async () => {
     const { data } = await supabase
       .from("operacoes")
       .select("*")
       .eq("status", "ativo")
       .order("created_at", { ascending: false })
-    setOperacoes(data || [])
-  }
+    setOperacoes(filtrarPorFilial(data || [], perfil))
+  }, [perfil])
+
+  useEffect(() => {
+    carregar()
+  }, [carregar])
 
   const filtradas = operacoes.filter(op =>
     op.placaCarreta?.toLowerCase().includes(busca.toLowerCase()) ||

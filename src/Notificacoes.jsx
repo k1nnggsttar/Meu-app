@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Bell, CheckCircle2, Truck, AlertTriangle } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { getOcorrencia } from './lib/ocorrencias'
+import { usePerfil } from './lib/perfilContext'
+import { filtrarPorFilial } from './lib/filtroFilial'
 
 function tempoRelativo(iso) {
   const diff = Date.now() - new Date(iso).getTime()
@@ -42,21 +44,22 @@ function derivarNotificacoes(operacoes) {
 }
 
 export default function Notificacoes({ align = 'right' }) {
+  const perfil = usePerfil()
   const [aberto, setAberto] = useState(false)
   const [notifs, setNotifs] = useState([])
   const [limpoEm, setLimpoEm] = useState(() => Number(localStorage.getItem('notifLimpoEm') || 0))
   const ref = useRef(null)
 
-  const carregar = async () => {
+  const carregar = useCallback(async () => {
     const { data } = await supabase.from('operacoes').select('*').order('created_at', { ascending: false })
-    setNotifs(derivarNotificacoes(data || []))
-  }
+    setNotifs(derivarNotificacoes(filtrarPorFilial(data || [], perfil)))
+  }, [perfil])
 
   useEffect(() => {
     carregar()
     const id = setInterval(carregar, 30000)
     return () => clearInterval(id)
-  }, [])
+  }, [carregar])
 
   useEffect(() => {
     if (!aberto) return

@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { supabase } from "./lib/supabase"
 import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, ExternalLink, AlertTriangle, Package } from 'lucide-react'
 import { getNomeFilial } from "./lib/filiais"
 import useIsDesktop from "./hooks/useIsDesktop"
 import FreteMercadoriaChart from "./FreteMercadoriaChart"
+import { usePerfil } from "./lib/perfilContext"
+import { filtrarPorFilial } from "./lib/filtroFilial"
 
 const HELP_DESK_URL = 'https://vitlog.reportload.com/help_desk'
 
@@ -42,19 +44,20 @@ function calcProdSec(op, now) {
 
 export default function Dashboard({ setPage }) {
   const isDesktop = useIsDesktop()
+  const perfil = usePerfil()
   const [operacoes, setOperacoes] = useState([])
   const [now, setNow] = useState(Date.now())
+
+  const carregar = useCallback(async () => {
+    const { data } = await supabase.from("operacoes").select("*")
+    setOperacoes(filtrarPorFilial(data || [], perfil))
+  }, [perfil])
 
   useEffect(() => {
     carregar()
     const tick = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(tick)
-  }, [])
-
-  const carregar = async () => {
-    const { data } = await supabase.from("operacoes").select("*")
-    setOperacoes(data || [])
-  }
+  }, [carregar])
 
   const ativos = operacoes.filter(op => op.status === "ativo")
   const concluidos = operacoes.filter(op => op.status === "concluido")
