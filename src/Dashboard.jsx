@@ -4,6 +4,7 @@ import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, ExternalLink, Al
 import { getNomeFilial } from "./lib/filiais"
 import useIsDesktop from "./hooks/useIsDesktop"
 import UltimosDiasChart from "./UltimosDiasChart"
+import FreteMercadoriaChart from "./FreteMercadoriaChart"
 
 const HELP_DESK_URL = 'https://vitlog.reportload.com/help_desk'
 
@@ -86,6 +87,20 @@ export default function Dashboard({ setPage }) {
     ...prodList.map(x => ({ ...x, concluido: false })),
     ...finalizadosHoje.map(op => ({ op, sec: 0, concluido: true })),
   ]
+
+  const ultimos15Dias = Array.from({ length: 15 }, (_, i) => {
+    const d = new Date(hoje)
+    d.setDate(d.getDate() - (14 - i))
+    const doDia = concluidos.filter(op => {
+      const dt = new Date(op.finalizado_at || op.created_at)
+      return dt.getDate() === d.getDate() && dt.getMonth() === d.getMonth() && dt.getFullYear() === d.getFullYear()
+    })
+    return {
+      frete: doDia.reduce((s, op) => s + (Number(op.frete) || 0), 0),
+      mercadoria: doDia.reduce((s, op) => s + (Number(op.mercadoria) || 0), 0),
+      label: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+    }
+  })
 
   const DOW_LETRAS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
   const ultimos7Dias = Array.from({ length: 7 }, (_, i) => {
@@ -315,6 +330,15 @@ export default function Dashboard({ setPage }) {
       )}
       </div>
 
+      </div>
+
+      {/* Frete e mercadoria */}
+      <div className="card-hover" style={{
+        background: 'white', borderRadius: 16,
+        padding: 16, marginBottom: 12,
+        boxShadow: '0 2px 10px rgba(0,0,0,0.07)'
+      }}>
+        <FreteMercadoriaChart dias={ultimos15Dias} />
       </div>
 
       {/* Help Desk */}
