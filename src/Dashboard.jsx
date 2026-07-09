@@ -3,6 +3,7 @@ import { supabase } from "./lib/supabase"
 import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, ExternalLink, AlertTriangle, Package } from 'lucide-react'
 import { getNomeFilial } from "./lib/filiais"
 import useIsDesktop from "./hooks/useIsDesktop"
+import UltimosDiasChart from "./UltimosDiasChart"
 
 const HELP_DESK_URL = 'https://vitlog.reportload.com/help_desk'
 
@@ -85,6 +86,21 @@ export default function Dashboard({ setPage }) {
     ...prodList.map(x => ({ ...x, concluido: false })),
     ...finalizadosHoje.map(op => ({ op, sec: 0, concluido: true })),
   ]
+
+  const DOW_LETRAS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+  const ultimos7Dias = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(hoje)
+    d.setDate(d.getDate() - (6 - i))
+    const count = concluidos.filter(op => {
+      const dt = new Date(op.finalizado_at || op.created_at)
+      return dt.getDate() === d.getDate() && dt.getMonth() === d.getMonth() && dt.getFullYear() === d.getFullYear()
+    }).length
+    return {
+      count,
+      dow: DOW_LETRAS[d.getDay()],
+      dataLabel: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+    }
+  })
 
   return (
     <div style={{ padding: isDesktop ? 0 : '20px 16px' }}>
@@ -241,6 +257,7 @@ export default function Dashboard({ setPage }) {
         )}
       </div>
 
+      <div style={isDesktop ? { display: 'flex', flexDirection: 'column', gap: 12 } : undefined}>
       {/* Praças em carregamento */}
       <div className="card-hover" style={{
         background: 'white', borderRadius: 16,
@@ -289,6 +306,13 @@ export default function Dashboard({ setPage }) {
             </div>
           ))
         )}
+      </div>
+
+      {isDesktop && (
+        <div className="card-hover" style={{ background: 'white', borderRadius: 16, padding: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.07)' }}>
+          <UltimosDiasChart dias={ultimos7Dias} />
+        </div>
+      )}
       </div>
 
       </div>
