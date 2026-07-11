@@ -6,6 +6,7 @@ import ConcluidoDetalhesModal from "./ConcluidoDetalhesModal"
 import useIsDesktop from "./hooks/useIsDesktop"
 import { usePerfil } from "./lib/perfilContext"
 import { filtrarPorFilial } from "./lib/filtroFilial"
+import BarraProgresso from "./BarraProgresso"
 
 export default function Concluidos() {
   const isDesktop = useIsDesktop()
@@ -128,13 +129,8 @@ export default function Concluidos() {
             </div>
 
             {/* Barra 100% verde */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>Concluído</span>
-              <span style={{ fontSize: 11, fontWeight: '700', color: '#16a34a' }}>100%</span>
-            </div>
-            <div style={{ height: 4, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
-              <div style={{ width: '100%', height: '100%', background: '#16a34a', borderRadius: 999 }} />
-            </div>
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>Concluído</span>
+            <BarraProgresso pct={100} cor="#16a34a" />
 
             <button type="button" onClick={() => setVerOp(op)}
               style={{ width: '100%', marginTop: 12, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', color: '#2563eb', fontSize: 13, fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>

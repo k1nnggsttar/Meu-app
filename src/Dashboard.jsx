@@ -4,6 +4,7 @@ import { Truck, Shield, Clock, CheckCircle, MapPin, Headphones, ExternalLink, Al
 import { getNomeFilial } from "./lib/filiais"
 import useIsDesktop from "./hooks/useIsDesktop"
 import FreteMercadoriaChart from "./FreteMercadoriaChart"
+import BarraProgresso from "./BarraProgresso"
 import { usePerfil } from "./lib/perfilContext"
 import { filtrarPorFilial } from "./lib/filtroFilial"
 
@@ -124,9 +125,7 @@ export default function Dashboard({ setPage }) {
             {ativos.length}
           </h1>
           <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 14px' }}>Carregamentos</p>
-          <div style={{ height: 3, background: '#bfdbfe', borderRadius: 999, overflow: 'hidden' }}>
-            <div style={{ width: ativos.length > 0 ? '60%' : '0%', height: '100%', background: '#2563eb' }} />
-          </div>
+          <BarraProgresso pct={ativos.length > 0 ? 60 : 0} />
         </div>
 
         {/* Card 2: Praças carregando */}
@@ -287,26 +286,27 @@ export default function Dashboard({ setPage }) {
             Nenhuma praça em carregamento.
           </p>
         ) : (
-          Object.entries(pracasGrupo).map(([nome, ops]) => (
-            <div key={nome} className="row-hover" style={{ padding: '10px 8px', borderTop: '1px solid #f1f5f9', marginTop: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <span style={{
-                  background: '#2563eb', color: 'white',
-                  fontSize: 11, fontWeight: '700', padding: '4px 8px',
-                  borderRadius: 8, minWidth: 38, textAlign: 'center', flexShrink: 0
-                }}>
-                  {nome.slice(0, 3).toUpperCase()}
-                </span>
-                <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: 0, flex: 1 }}>{nome.toUpperCase()}</p>
-                <p style={{ fontSize: 12, color: '#64748b', margin: 0, flexShrink: 0 }}>
-                  {ops.length} caminhão{ops.length > 1 ? 'ões' : ''}
-                </p>
+          Object.entries(pracasGrupo).map(([nome, ops]) => {
+            const mediaProgresso = Math.round(ops.reduce((s, o) => s + (o.progresso || 0), 0) / ops.length)
+            return (
+              <div key={nome} className="row-hover" style={{ padding: '10px 8px', borderTop: '1px solid #f1f5f9', marginTop: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{
+                    background: '#2563eb', color: 'white',
+                    fontSize: 11, fontWeight: '700', padding: '4px 8px',
+                    borderRadius: 8, minWidth: 38, textAlign: 'center', flexShrink: 0
+                  }}>
+                    {nome.slice(0, 3).toUpperCase()}
+                  </span>
+                  <p style={{ fontSize: 13, fontWeight: '700', color: '#1e293b', margin: 0, flex: 1 }}>{nome.toUpperCase()}</p>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: 0, flexShrink: 0 }}>
+                    {ops.length} caminhão{ops.length > 1 ? 'ões' : ''}
+                  </p>
+                </div>
+                <BarraProgresso pct={mediaProgresso} />
               </div>
-              <div style={{ height: 4, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
-                <div style={{ width: '70%', height: '100%', background: '#2563eb', borderRadius: 999 }} />
-              </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 

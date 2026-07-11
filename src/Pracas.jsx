@@ -4,6 +4,7 @@ import { Search, MapPin } from 'lucide-react'
 import useIsDesktop from "./hooks/useIsDesktop"
 import { usePerfil } from "./lib/perfilContext"
 import { filtrarPorFilial } from "./lib/filtroFilial"
+import BarraProgresso from "./BarraProgresso"
 
 export default function Pracas() {
   const isDesktop = useIsDesktop()
@@ -93,11 +94,8 @@ export default function Pracas() {
                   <p style={{ fontSize: 13, fontWeight: '600', color: '#334155', margin: 0 }}>{op.placaCarreta}</p>
                   <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>Motorista: {op.motorista}</p>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: 13, fontWeight: '700', color: '#2563eb' }}>{op.progresso || 0}%</span>
-                  <div style={{ width: 60, height: 4, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden', marginTop: 4 }}>
-                    <div style={{ width: `${op.progresso || 0}%`, height: '100%', background: '#2563eb', borderRadius: 999 }} />
-                  </div>
+                <div style={{ width: 60 }}>
+                  <BarraProgresso pct={op.progresso || 0} />
                 </div>
               </div>
             ))}

@@ -6,6 +6,7 @@ import EditarOperacaoModal from './EditarOperacaoModal'
 import ConfirmModal from './ConfirmModal'
 import FinalizarModal from './FinalizarModal'
 import Confetti from './Confetti'
+import BarraProgresso from './BarraProgresso'
 
 function fmtTimer(sec) {
   if (sec < 0) sec = 0
@@ -191,12 +192,7 @@ export default function OperacaoCard({ op, onAtualizar }) {
         )}
 
         {/* Progresso */}
-        <div style={{ height: 5, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
-          <div style={{ width: `${op.progresso || 0}%`, height: '100%', background: '#2563eb', borderRadius: 999, transition: 'width 0.5s' }} />
-        </div>
-        <div style={{ textAlign: 'right', fontSize: 10, color: '#2563eb', fontWeight: '700', marginTop: 3 }}>
-          {op.progresso || 0}%
-        </div>
+        <BarraProgresso pct={op.progresso || 0} />
       </div>
 
       {/* Botões */}
