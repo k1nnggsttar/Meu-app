@@ -1,7 +1,7 @@
 import { Truck } from 'lucide-react'
 
-const COR_FRETE = '#fb923c'
-const COR_MERC = '#9a3412'
+const COR_FRETE = '#16a34a'
+const COR_MERC = '#2563eb'
 const COR_VAZIO = '#cbd5e1'
 const N_CAMINHOES = 20
 
