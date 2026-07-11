@@ -67,6 +67,14 @@ h1, h2, h3, p {
   transform: translateX(2px) translateY(0px);
 }
 
+.pictograma-icon {
+  transition: transform 0.15s ease;
+  cursor: default;
+}
+.pictograma-icon:hover {
+  transform: scale(1.18);
+}
+
 @keyframes livePulse {
   0%   { transform: scale(1);   opacity: 1; }
   70%  { transform: scale(2.4); opacity: 0; }
